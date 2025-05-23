@@ -10,21 +10,23 @@ export default function Home() {
             <h2 className="text-3xl font-bold tracking-tight text-[#1d4e8f]">
               Lodge Your Grievance
             </h2>
-            <p className="text-muted-foreground mt-2">
-              Search for information or submit a new grievance
-            </p>
           </div>
 
-          <div className="relative">
+          <form action="/grievance" method="get" className="relative">
             <Input
               className="w-full px-4 py-6 text-lg rounded-full border-2 border-[#1d4e8f] focus:border-[#1d4e8f] focus:ring-[#1d4e8f]"
-              placeholder="Search for grievances or type your query..."
+              placeholder="Type your grievance here..."
               type="text"
+              name="grievanceText"
+              required
             />
-            <button className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-[#1d4e8f] text-white hover:bg-[#15396a] px-4 py-2 rounded-full">
-              Search
+            <button 
+              type="submit"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-[#1d4e8f] text-white hover:bg-[#15396a] px-4 py-2 rounded-full"
+            >
+              Submit
             </button>
-          </div>
+          </form>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
