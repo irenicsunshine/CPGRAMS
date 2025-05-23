@@ -33,3 +33,26 @@ export interface ErrorResponse {
   message: string;
   code?: string | number;
 }
+
+
+// Type for the grievance data
+export interface Grievance {
+  id: string;
+  title?: string;
+  description: string;
+  category: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+  grievance_received_date: string;
+  reformed_flag: boolean;
+  cpgrams_category?: string;
+}
+
+export interface GrievanceResponse {
+  status: string;
+  user_id: string;
+  grievances: Grievance[];
+  total: number;
+}

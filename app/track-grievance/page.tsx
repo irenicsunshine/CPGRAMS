@@ -1,3 +1,4 @@
+"use server";
 import {
   Card,
   CardContent,
@@ -8,41 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-
-// Mock data - replace with actual database call in production
-const MOCK_DATA = {
-  status: "success",
-  user_id: "rec_d0jieo7jkah57cl384i0",
-  grievances: [
-    {
-      category: "General",
-      created_at: "2025-05-23T05:31:40.547Z",
-      description:
-        "The construction project sanctioned by the Air Force in March 2022 with an estimated cost of ₹48 crore, was scheduled for completion by December 2023. However, as of May 2025, only 60% of the work has been completed. Personnel continue to face housing shortages, and the existing quarters are in a dilapidated condition.",
-      grievance_received_date: "2025-05-23T05:31:40.547Z",
-      id: "rec_d0o0gf5ed0mvjr6lemt0",
-      priority: "medium",
-      reformed_flag: false,
-      status: "pending",
-      updated_at: "2025-05-23T05:31:40.547Z",
-    },
-    {
-      category: "Air Force",
-      cpgrams_category: "Air Force",
-      created_at: "2025-05-23T10:29:25.78Z",
-      description:
-        "There was a construction project sanctioned by the Air Force in March 2022, with an estimated cost of ₹48 crore and a scheduled completion date of December 2023. However, as of May 2025, only 60% of the work has been completed. Personnel continue to face housing shortages, and the existing quarters are in a dilapidated condition.",
-      grievance_received_date: "2025-05-23T10:29:25.78Z",
-      id: "rec_d0o4s19u3hmgfo4h5img",
-      priority: "high",
-      reformed_flag: false,
-      status: "pending",
-      title: "Delay in Air Force Construction Project and Housing Shortage",
-      updated_at: "2025-05-23T10:29:25.78Z",
-    },
-  ],
-  total: 2,
-};
+import { Grievance, GrievanceResponse } from "@/utils/types";
 
 const priorityColors: Record<string, string> = {
   high: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -52,8 +19,25 @@ const priorityColors: Record<string, string> = {
 };
 
 export default async function TrackGrievancePage() {
-  // In a real app, you would fetch this data from your database
-  const { grievances } = MOCK_DATA;
+  const userId = process.env.USER_ID;
+  const url = process.env.GRM_API_URL;
+  let grievances: Grievance[] = [];
+
+  try {
+    const response = await fetch(`${url}/grievances/user/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.GRM_API_TOKEN}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    const data: GrievanceResponse = await response.json();
+    grievances = data.grievances || [];
+  } catch (err) {
+    console.error("Failed to fetch grievances:", err);
+  }
 
   return (
     <div className="container mx-auto p-6">
