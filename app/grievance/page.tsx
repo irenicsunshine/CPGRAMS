@@ -4,7 +4,9 @@ import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 
 export default function GrievancePage() {
-  const { messages, input, setInput, append, status } = useChat();
+  const { messages, input, setInput, append, status } = useChat({
+    maxSteps: 3,
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isResponding = status === "submitted" || status === "streaming";
 
