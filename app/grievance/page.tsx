@@ -1,28 +1,106 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
+import { classifyGrievance } from "@/app/actions/grievance";
+
+interface ToolInvocation {
+  toolCallId: string;
+  toolName: string;
+  args: {
+    query?: string; // For fetchContext tool
+    [key: string]: unknown;
+  };
+  state: "partial-call" | "call" | "result";
+  result?: string | Record<string, unknown>;
+}
+
+interface MessagePart {
+  type:
+    | "text"
+    | "tool-invocation"
+    | "reasoning"
+    | "source"
+    | "file"
+    | "step-start";
+  text?: string;
+  toolInvocation?: ToolInvocation;
+  // Additional fields for other part types can be added as needed
+}
+
+interface Message {
+  id: string;
+  role: "user" | "assistant" | "data" | "system";
+  content: string;
+  parts?: MessagePart[];
+}
 
 export default function GrievancePage() {
-  const { messages, input, setInput, append, status } = useChat({
+  const {
+    messages: chatMessages,
+    input,
+    setInput,
+    append,
+    addToolResult,
+    status,
+  } = useChat({
     maxSteps: 3,
+    onToolCall: (() => {
+      return async ({
+        toolCall,
+      }: {
+        toolCall: { toolName: string; args: unknown; toolCallId: string };
+      }) => {
+        const processedToolCallIds = new Set<string>();
+        if (toolCall.toolName === "classifyGrievance") {
+          const grievanceText = toolCall.args as { query: string };
+          const toolCallId = toolCall.toolCallId;
+          console.table({
+            toolCall,
+            grievanceText,
+            toolCallId,
+          });
+
+          if (processedToolCallIds.has(toolCallId)) {
+            return;
+          }
+          processedToolCallIds.add(toolCallId);
+
+          const result = await classifyGrievance(
+            (toolCall.args as { query: string }).query
+          );
+          console.log(result);
+
+          addToolResult({
+            toolCallId,
+            result: result,
+          });
+        }
+      };
+    })(),
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isResponding = status === "submitted" || status === "streaming";
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages]);
 
   return (
     <div className="flex flex-col bg-gray-50 min-h-[calc(85vh)]">
       {/* Chat messages area */}
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto space-y-6">
-          {messages.length === 0 && (
+          {chatMessages.length === 0 && (
             <div className="text-center py-10">
               <p className="text-gray-500">
                 Submit your grievance using the input box below
               </p>
             </div>
           )}
-          {messages.map((message, index) => (
+          {chatMessages.map((message: Message, index) => (
             <div
               key={index}
               className={`p-4 rounded-lg ${

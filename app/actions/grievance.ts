@@ -23,7 +23,7 @@ export async function classifyGrievance(
         Authorization: `Bearer ${API_TOKEN}`,
       },
       body: JSON.stringify({
-        text: grievanceText,
+        grievance_text: grievanceText,
       }),
     });
 
@@ -48,22 +48,19 @@ export async function classifyGrievance(
 }
 
 export async function submitGrievance(
+  title: string,
   description: string,
   category: string = "General",
   userId: string = "rec_d0jieo7jkah57cl384i0",
   priority: "low" | "medium" | "high" = "medium"
 ): Promise<ApiResponse<GrievanceData>> {
   const grievanceData: GrievanceData = {
-    title: "User Grievance",
+    title: title,
     description,
     category,
     user_id: userId,
     priority,
     cpgrams_category: category,
-    reformed_top_level_category: category,
-    reformed_last_level_category: category,
-    covid19_category: category,
-    reformed_flag: false,
   };
 
   try {
