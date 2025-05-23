@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -20,7 +21,7 @@ export default function Home() {
               name="grievanceText"
               required
             />
-            <button 
+            <button
               type="submit"
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-[#1d4e8f] text-white hover:bg-[#15396a] px-4 py-2 rounded-full"
             >
@@ -29,15 +30,17 @@ export default function Home() {
           </form>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
-              <h3 className="font-semibold text-[#1d4e8f]">
-                Lodge New Grievance
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Submit a new complaint or grievance to the appropriate
-                department
-              </p>
-            </div>
+            <Link href="/grievance">
+              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
+                <h3 className="font-semibold text-[#1d4e8f]">
+                  Lodge New Grievance
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Submit a new complaint or grievance to the appropriate
+                  department
+                </p>
+              </div>
+            </Link>
             <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
               <h3 className="font-semibold text-[#1d4e8f]">Track Grievance</h3>
               <p className="text-sm text-gray-600 mt-1">
