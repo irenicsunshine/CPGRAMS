@@ -47,12 +47,13 @@ export async function classifyGrievance(
   }
 }
 
-export async function submitGrievance(
+export async function createGrievance(
   title: string,
   description: string,
-  category: string = "General",
-  userId: string = "rec_d0jieo7jkah57cl384i0",
-  priority: "low" | "medium" | "high" = "medium"
+  category: string,
+  priority: "low" | "medium" | "high" = "medium",
+  cpgrams_category: string,
+  userId: string = "rec_d0jieo7jkah57cl384i0"
 ): Promise<ApiResponse<GrievanceData>> {
   const grievanceData: GrievanceData = {
     title: title,
@@ -60,7 +61,7 @@ export async function submitGrievance(
     category,
     user_id: userId,
     priority,
-    cpgrams_category: category,
+    cpgrams_category: cpgrams_category,
   };
 
   try {

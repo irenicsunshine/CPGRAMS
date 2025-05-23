@@ -77,6 +77,35 @@ export async function POST(req: Request) {
           query: z.string().describe("User grievance text"),
         }),
       },
+      createGrievance: {
+        name: "createGrievance",
+        description: "Create a new grievance in the system.",
+        parameters: z.object({
+          title: z
+            .string()
+            .describe("A short, clear title summarizing the grievance issue"),
+          description: z
+            .string()
+            .describe(
+              "Detailed description including all relevant information for the grievance"
+            ),
+          category: z
+            .string()
+            .describe(
+              "Main category of the grievance. If unsure or not a grievance, use 'Other' or 'None'"
+            ),
+          cpgrams_category: z
+            .string()
+            .describe(
+              "Full category name along with subcategories extracted from the CPGRAMS classification"
+            ),
+          priority: z
+            .enum(["low", "medium", "high"])
+            .describe(
+              "Priority level based on the urgency and impact of the grievance"
+            ),
+        }),
+      },
     },
   });
 

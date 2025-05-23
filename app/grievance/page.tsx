@@ -2,7 +2,7 @@
 import { useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
-import { classifyGrievance } from "@/app/actions/grievance";
+import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
 
 interface ToolInvocation {
   toolCallId: string;
@@ -37,7 +37,7 @@ interface Message {
 
 export default function GrievancePage() {
   const {
-    messages: chatMessages,
+    messages: chatMessages = [],
     input,
     setInput,
     append,
@@ -45,40 +45,79 @@ export default function GrievancePage() {
     status,
   } = useChat({
     maxSteps: 3,
-    onToolCall: (() => {
-      return async ({
-        toolCall,
-      }: {
-        toolCall: { toolName: string; args: unknown; toolCallId: string };
+    onToolCall: async ({ toolCall }) => {
+      const processToolCall = async (toolCall: {
+        toolName: string;
+        args: unknown;
+        toolCallId: string;
       }) => {
-        const processedToolCallIds = new Set<string>();
-        if (toolCall.toolName === "classifyGrievance") {
-          const grievanceText = toolCall.args as { query: string };
-          const toolCallId = toolCall.toolCallId;
-          console.table({
-            toolCall,
-            grievanceText,
-            toolCallId,
-          });
+        const { toolName, args, toolCallId } = toolCall;
+        console.log(`Processing tool call: ${toolName}`, { toolCallId, args });
 
-          if (processedToolCallIds.has(toolCallId)) {
-            return;
+        try {
+          if (toolName === "classifyGrievance") {
+            const result = await classifyGrievance(
+              (args as { query: string }).query
+            );
+            console.log("Classification result:", result);
+
+            addToolResult({
+              toolCallId,
+              result: result,
+            });
+          } else if (toolName === "createGrievance") {
+            type GrievanceArgs = {
+              title: string;
+              description: string;
+              category: string;
+              priority: "low" | "medium" | "high";
+            };
+            const grievanceArgs = args as GrievanceArgs;
+
+            const result = await createGrievance(
+              grievanceArgs.title,
+              grievanceArgs.description,
+              grievanceArgs.category,
+              grievanceArgs.priority,
+              grievanceArgs.category // Using category as cpgrams_category
+            );
+            console.log("Grievance creation result:", result);
+
+            addToolResult({
+              toolCallId,
+              result: {
+                status: "success",
+                message: "Grievance created successfully",
+              },
+            });
+          } else {
+            console.warn(`Unknown tool call: ${toolName}`);
+            addToolResult({
+              toolCallId,
+              result: { error: `Unknown tool call: ${toolName}` },
+            });
           }
-          processedToolCallIds.add(toolCallId);
-
-          const result = await classifyGrievance(
-            (toolCall.args as { query: string }).query
-          );
-          console.log(result);
-
+        } catch (error) {
+          console.error(`Error processing tool call ${toolName}:`, error);
           addToolResult({
             toolCallId,
-            result: result,
+            result: {
+              error: `Error processing ${toolName}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
           });
         }
       };
-    })(),
+
+      if (Array.isArray(toolCall)) {
+        await Promise.all(toolCall.map(processToolCall));
+      } else {
+        await processToolCall(toolCall);
+      }
+    },
   });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isResponding = status === "submitted" || status === "streaming";
 
