@@ -41,12 +41,16 @@ export default function Home() {
                 </p>
               </div>
             </Link>
-            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
-              <h3 className="font-semibold text-[#1d4e8f]">Track Grievance</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Check the status of your previously submitted grievances
-              </p>
-            </div>
+            <Link href="/track-grievance">
+              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
+                <h3 className="font-semibold text-[#1d4e8f]">
+                  Track Grievance
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Check the status of your previously submitted grievances
+                </p>
+              </div>
+            </Link>
             <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
               <h3 className="font-semibold text-[#1d4e8f]">
                 Department Directory
