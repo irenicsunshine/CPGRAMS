@@ -73,14 +73,6 @@ export default function GrievancePage() {
             result: result,
           });
         } else if (toolCall.toolName === "createGrievance") {
-          let query = "";
-          if (
-            typeof toolCall.args === "object" &&
-            toolCall.args !== null &&
-            "query" in toolCall.args
-          ) {
-            query = (toolCall.args as { query: string }).query;
-          }
           const toolCallId = toolCall.toolCallId;
           if (processedToolCallIds.has(toolCallId)) {
             return;
