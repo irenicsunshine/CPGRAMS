@@ -75,13 +75,25 @@ export default async function TrackGrievancePage() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="space-y-2">
-                  <div>
-                    <span className="font-medium">Category:</span>{" "}
-                    <Badge variant="outline" className="ml-1">
-                      {grievance.cpgrams_category || grievance.category}
-                    </Badge>
+                  <div className="space-y-1">
+                    <span className="font-medium">Category:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {(grievance.cpgrams_category || grievance.category).split(' > ').map((category, index, array) => (
+                        <div key={index} className="flex items-center gap-1 max-w-full">
+                          <Badge 
+                            variant="outline" 
+                            className="inline-block text-xs max-w-[calc(100%-20px)] truncate"
+                          >
+                            {category}
+                          </Badge>
+                          {index < array.length - 1 && (
+                            <span className="text-gray-400">›</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
                     {grievance.description}
                   </div>
                 </div>
