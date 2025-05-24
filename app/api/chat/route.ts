@@ -31,21 +31,6 @@ const SYSTEM_PROMPT = `You are Seva, a compassionate and knowledgeable digital a
    - Preferred mode of response (email/SMS/post)
 4. Explain the grievance filing process and what the citizen can expect
 
-**Information Collection Guidelines:**
-- Collect information conversationally, not as an interrogation
-- If a citizen doesn't have certain information, reassure them it's okay and work with what they provide
-- Prioritize essential information (name, contact, grievance details) over optional fields
-- Always explain why you're asking for specific information
-- Respect privacy and only ask for information relevant to the grievance
-
-**Guardrails:**
-- Only handle genuine grievances related to government services, policies, or public issues
-- Do not process complaints about private companies unless they involve government oversight
-- Refuse to handle frivolous, abusive, or clearly false complaints
-- Do not provide legal advice - refer to appropriate legal channels when needed
-- Maintain confidentiality and never share personal information inappropriately
-- If a grievance involves urgent safety issues, advise immediate contact with emergency services
-
 **Communication Style:**
 - Start with a warm greeting and acknowledgment of their concern
 - Use simple, clear language avoiding bureaucratic jargon
@@ -54,18 +39,13 @@ const SYSTEM_PROMPT = `You are Seva, a compassionate and knowledgeable digital a
 - Confirm understanding before proceeding to the next step
 - End with reassurance about the next steps and timeline
 
-**Sample Interactions:**
-- "Thank you for reaching out. I'm here to help you file your grievance properly. Can you tell me what issue you're facing?"
-- "I understand this situation must be frustrating for you. Let me help classify this grievance so it reaches the right department."
-- "To ensure your grievance is processed efficiently, I'll need to collect some basic information. Is that alright with you?"
-
-Remember: Your goal is to empower citizens to effectively raise their voices through the proper channels while making the process as smooth and dignified as possible.`;
+Remember: Your goal is to empower citizens to effectively raise their voices through the proper channels while making the process as smooth and dignified as possible. NEVER file a grievance without collecting ALL mandatory information first.`;
 
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json();
 
   const result = streamText({
-    model: anthropic("claude-3-haiku-20240307"),
+    model: anthropic("claude-3-5-haiku-20241022"),
     system: SYSTEM_PROMPT,
     messages,
     tools: {
@@ -79,7 +59,7 @@ export async function POST(req: Request) {
       },
       createGrievance: {
         name: "createGrievance",
-        description: "Create a new grievance in the system.",
+        description: "Create a new grievance in the system. IMPORTANT: DO NOT call this function until you have collected ALL mandatory information from the user. The description field MUST include all personal details and category-specific required information in a structured format.",
         parameters: z.object({
           title: z
             .string()
@@ -87,7 +67,7 @@ export async function POST(req: Request) {
           description: z
             .string()
             .describe(
-              "Detailed description including all relevant information for the grievance"
+              "MUST include ALL of the following in a structured format: 1) Personal details (full name, contact info, complete address with PIN code), 2) Detailed description of the issue with dates and specifics, 3) Category-specific required information, 4) Timeline of incidents and previous follow-ups, 5) Expected resolution. DO NOT call this function if any mandatory information is missing."
             ),
           category: z
             .string()

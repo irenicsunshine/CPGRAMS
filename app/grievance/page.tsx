@@ -45,77 +45,70 @@ export default function GrievancePage() {
     status,
   } = useChat({
     maxSteps: 3,
-    onToolCall: async ({ toolCall }) => {
-      const processToolCall = async (toolCall: {
-        toolName: string;
-        args: unknown;
-        toolCallId: string;
+    onToolCall: (() => {
+      const processedToolCallIds = new Set<string>();
+      return async ({
+        toolCall,
+      }: {
+        toolCall: { toolName: string; args: unknown; toolCallId: string };
       }) => {
-        const { toolName, args, toolCallId } = toolCall;
-        console.log(`Processing tool call: ${toolName}`, { toolCallId, args });
-
-        try {
-          if (toolName === "classifyGrievance") {
-            const result = await classifyGrievance(
-              (args as { query: string }).query
-            );
-            console.log("Classification result:", result);
-
-            addToolResult({
-              toolCallId,
-              result: result,
-            });
-          } else if (toolName === "createGrievance") {
-            type GrievanceArgs = {
-              title: string;
-              description: string;
-              category: string;
-              priority: "low" | "medium" | "high";
-            };
-            const grievanceArgs = args as GrievanceArgs;
-
-            const result = await createGrievance(
-              grievanceArgs.title,
-              grievanceArgs.description,
-              grievanceArgs.category,
-              grievanceArgs.priority,
-              grievanceArgs.category // Using category as cpgrams_category
-            );
-            console.log("Grievance creation result:", result);
-
-            addToolResult({
-              toolCallId,
-              result: {
-                status: "success",
-                message: "Grievance created successfully",
-              },
-            });
-          } else {
-            console.warn(`Unknown tool call: ${toolName}`);
-            addToolResult({
-              toolCallId,
-              result: { error: `Unknown tool call: ${toolName}` },
-            });
+        if (toolCall.toolName === "classifyGrievance") {
+          let query = "";
+          if (
+            typeof toolCall.args === "object" &&
+            toolCall.args !== null &&
+            "query" in toolCall.args
+          ) {
+            query = (toolCall.args as { query: string }).query;
           }
-        } catch (error) {
-          console.error(`Error processing tool call ${toolName}:`, error);
+          const toolCallId = toolCall.toolCallId;
+          if (processedToolCallIds.has(toolCallId)) {
+            return;
+          }
+          processedToolCallIds.add(toolCallId);
+
+          const result = await classifyGrievance(query);
           addToolResult({
             toolCallId,
-            result: {
-              error: `Error processing ${toolName}: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
+            result: result,
+          });
+        } else if (toolCall.toolName === "createGrievance") {
+          let query = "";
+          if (
+            typeof toolCall.args === "object" &&
+            toolCall.args !== null &&
+            "query" in toolCall.args
+          ) {
+            query = (toolCall.args as { query: string }).query;
+          }
+          const toolCallId = toolCall.toolCallId;
+          if (processedToolCallIds.has(toolCallId)) {
+            return;
+          }
+          processedToolCallIds.add(toolCallId);
+          type GrievanceArgs = {
+            title: string;
+            description: string;
+            category: string;
+            priority: "low" | "medium" | "high";
+            cpgrams_category: string;
+          };
+          const grievanceArgs = toolCall.args as GrievanceArgs;
+
+          const result = await createGrievance(
+            grievanceArgs.title,
+            grievanceArgs.description,
+            grievanceArgs.category,
+            grievanceArgs.priority,
+            grievanceArgs.cpgrams_category
+          );
+          addToolResult({
+            toolCallId,
+            result: result,
           });
         }
       };
-
-      if (Array.isArray(toolCall)) {
-        await Promise.all(toolCall.map(processToolCall));
-      } else {
-        await processToolCall(toolCall);
-      }
-    },
+    })(),
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
