@@ -59,7 +59,8 @@ export async function POST(req: Request) {
       },
       createGrievance: {
         name: "createGrievance",
-        description: "Create a new grievance in the system. IMPORTANT: DO NOT call this function until you have collected ALL mandatory information from the user. The description field MUST include all personal details and category-specific required information in a structured format.",
+        description:
+          "Create a new grievance in the system. IMPORTANT: DO NOT call this function until you have collected ALL mandatory information from the user. The description field MUST include all personal details and category-specific required information in a structured format.",
         parameters: z.object({
           title: z
             .string()

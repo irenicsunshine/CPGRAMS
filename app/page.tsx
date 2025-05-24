@@ -1,4 +1,3 @@
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
 export default function Home() {
@@ -9,25 +8,14 @@ export default function Home() {
         <div className="w-full max-w-2xl mx-auto space-y-6">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold tracking-tight text-[#1d4e8f]">
-              Lodge Your Grievance
+              Welcome to the Grievance Handling System
             </h2>
+            <p className="mt-4 text-lg text-gray-700">
+              Our system is designed to help you lodge and track grievances
+              efficiently. Please use the links below to submit a new grievance
+              or track the status of an existing one.
+            </p>
           </div>
-
-          <form action="/grievance" method="get" className="relative">
-            <Input
-              className="w-full px-4 py-6 text-lg rounded-full border-2 border-[#1d4e8f] focus:border-[#1d4e8f] focus:ring-[#1d4e8f]"
-              placeholder="Type your grievance here..."
-              type="text"
-              name="grievanceText"
-              required
-            />
-            <button
-              type="submit"
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-[#1d4e8f] text-white hover:bg-[#15396a] px-4 py-2 rounded-full"
-            >
-              Submit
-            </button>
-          </form>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/grievance">
@@ -64,7 +52,7 @@ export default function Home() {
       </main>
 
       <footer className="py-2 border-t text-center text-sm text-gray-500">
-        <p>© {new Date().getFullYear()} CPGRAMS - Government of India</p>
+        <p> {new Date().getFullYear()} CPGRAMS - Government of India</p>
       </footer>
     </div>
   );
