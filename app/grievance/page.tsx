@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
@@ -35,7 +35,99 @@ interface Message {
   parts?: MessagePart[];
 }
 
+// Function to parse message content into parts
+const parseMessageContent = (content: string): MessagePart[] => {
+  const parts: MessagePart[] = [];
+
+  // Regular expressions to match different content types
+  // Claude 3 Haiku specific patterns
+  const toolCallRegex = /I'll use the (\w+) tool to (.*?)\./g;
+  const toolResultRegex = /\[Tool Result\](.*?)\[\/Tool Result\]/g;
+  const reasoningRegex = /\[Reasoning\](.*?)\[\/Reasoning\]/g;
+
+  // Also look for function call blocks that Claude might use
+  const functionCallRegex = /<function_call>(.*?)<\/function_call>/g;
+  const functionResultRegex = /<function_result>(.*?)<\/function_result>/g;
+
+  let lastIndex = 0;
+  let match;
+
+  // Helper function to process matches
+  const processMatches = (regex: RegExp, type: string, state?: string) => {
+    regex.lastIndex = 0; // Reset the regex
+    lastIndex = 0;
+
+    while ((match = regex.exec(content)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        const textBefore = content.substring(lastIndex, match.index).trim();
+        if (textBefore) {
+          parts.push({
+            type: "text",
+            text: textBefore,
+          });
+        }
+      }
+
+      // Add the matched part
+      if (type === "tool-invocation") {
+        parts.push({
+          type: "tool-invocation",
+          text: match[0].trim(),
+          toolInvocation: {
+            toolCallId: "unknown",
+            toolName: match[1] || "unknown",
+            args: {},
+            state: state as "call" | "result" | "partial-call",
+            result: state === "result" ? match[1].trim() : undefined,
+          },
+        });
+      } else if (type === "reasoning") {
+        parts.push({
+          type: "reasoning",
+          text: match[1].trim(),
+        });
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+  };
+
+  // Process all types of content
+  processMatches(toolCallRegex, "tool-invocation", "call");
+  processMatches(functionCallRegex, "tool-invocation", "call");
+  processMatches(toolResultRegex, "tool-invocation", "result");
+  processMatches(functionResultRegex, "tool-invocation", "result");
+  processMatches(reasoningRegex, "reasoning");
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remainingText = content.substring(lastIndex).trim();
+    if (remainingText) {
+      parts.push({
+        type: "text",
+        text: remainingText,
+      });
+    }
+  }
+
+  // If no parts were found, treat the entire content as text
+  if (parts.length === 0) {
+    parts.push({
+      type: "text",
+      text: content,
+    });
+  }
+
+  return parts;
+};
+
 export default function GrievancePage() {
+  // State to track active tool calls
+  const [activeToolCalls, setActiveToolCalls] = useState<
+    Record<string, boolean>
+  >({});
+
   const {
     messages: chatMessages = [],
     input,
@@ -52,6 +144,11 @@ export default function GrievancePage() {
       }: {
         toolCall: { toolName: string; args: unknown; toolCallId: string };
       }) => {
+        // Mark this tool call as active
+        setActiveToolCalls((prev) => ({
+          ...prev,
+          [toolCall.toolCallId]: true,
+        }));
         if (toolCall.toolName === "classifyGrievance") {
           let query = "";
           if (
@@ -68,6 +165,14 @@ export default function GrievancePage() {
           processedToolCallIds.add(toolCallId);
 
           const result = await classifyGrievance(query);
+
+          // Mark this tool call as completed
+          setActiveToolCalls((prev) => {
+            const updated = { ...prev };
+            delete updated[toolCallId];
+            return updated;
+          });
+
           addToolResult({
             toolCallId,
             result: result,
@@ -94,6 +199,14 @@ export default function GrievancePage() {
             grievanceArgs.priority,
             grievanceArgs.cpgrams_category
           );
+
+          // Mark this tool call as completed
+          setActiveToolCalls((prev) => {
+            const updated = { ...prev };
+            delete updated[toolCallId];
+            return updated;
+          });
+
           addToolResult({
             toolCallId,
             result: result,
@@ -103,8 +216,15 @@ export default function GrievancePage() {
     })(),
   });
 
+  // Parse message content into parts for each message
+  const parsedMessages = chatMessages.map((message: Message) => ({
+    ...message,
+    parts: parseMessageContent(message.content),
+  }));
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isResponding = status === "submitted" || status === "streaming";
+  const hasActiveToolCalls = Object.keys(activeToolCalls).length > 0;
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -124,7 +244,7 @@ export default function GrievancePage() {
               </p>
             </div>
           )}
-          {chatMessages.map((message: Message, index) => (
+          {parsedMessages.map((message: Message, index) => (
             <div
               key={index}
               className={`p-4 rounded-lg ${
@@ -133,14 +253,113 @@ export default function GrievancePage() {
                   : "bg-gray-100 mr-auto max-w-[80%] break-words"
               }`}
             >
-              <p className="text-gray-800 whitespace-pre-wrap">
-                {message.content}
-              </p>
+              {message.parts?.map((part, partIndex) => {
+                if (part.type === "text") {
+                  // Only render text parts if they have content
+                  return part.text?.trim() ? (
+                    <p
+                      key={partIndex}
+                      className="text-gray-800 whitespace-pre-wrap mb-2"
+                    >
+                      {part.text}
+                    </p>
+                  ) : null;
+                } else if (part.type === "tool-invocation") {
+                  if (part.toolInvocation?.state === "call") {
+                    // Extract tool name if possible
+                    const toolName =
+                      part.toolInvocation.toolName !== "unknown"
+                        ? part.toolInvocation.toolName
+                        : "Tool";
+
+                    return (
+                      <div
+                        key={partIndex}
+                        className="bg-amber-50 border border-amber-200 rounded-md p-3 my-3"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                              Tool Call
+                            </span>
+                            <span className="text-amber-700 text-xs font-semibold">
+                              {toolName}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap">
+                          {part.text}
+                        </p>
+                      </div>
+                    );
+                  } else if (part.toolInvocation?.state === "result") {
+                    return (
+                      <div
+                        key={partIndex}
+                        className="bg-green-50 border border-green-200 rounded-md p-3 my-3"
+                      >
+                        <div className="flex items-center mb-2">
+                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
+                            Tool Result
+                          </span>
+                        </div>
+                        <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap overflow-auto max-h-40">
+                          {part.text}
+                        </p>
+                      </div>
+                    );
+                  }
+                } else if (part.type === "reasoning") {
+                  return (
+                    <div
+                      key={partIndex}
+                      className="bg-purple-50 border border-purple-200 rounded-md p-3 my-3"
+                    >
+                      <div className="flex items-center mb-2">
+                        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
+                          Reasoning
+                        </span>
+                      </div>
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {part.text}
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })}
               <span className="text-xs text-gray-500 mt-1 block">
                 {message.role === "user" ? "You" : "Assistant"}
               </span>
             </div>
           ))}
+
+          {/* Show tool call in progress indicator */}
+          {hasActiveToolCalls && (
+            <div className="bg-gray-100 mr-auto max-w-[80%] break-words p-4 rounded-lg">
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 my-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                      Processing
+                    </span>
+                    <span className="text-blue-700 text-xs font-semibold">
+                      Tool Call
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-2 bg-blue-50 rounded">
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                  <p className="text-gray-700 text-sm">
+                    The assistant is processing your request...
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs text-gray-500 mt-1 block">
+                Assistant
+              </span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
       </main>
