@@ -52,7 +52,7 @@ export default function Home() {
       </main>
 
       <footer className="py-2 border-t text-center text-sm text-gray-500">
-        <p> {new Date().getFullYear()} CPGRAMS - Government of India</p>
+        <p> {new Date().getFullYear()} OpenNyAI Maker Residency</p>
       </footer>
     </div>
   );
