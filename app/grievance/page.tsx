@@ -213,12 +213,19 @@ export default function GrievancePage() {
             result: result,
           });
         } else if (toolCall.toolName === "performMySchemeSearch") {
+          let query = "";
+          if (
+            typeof toolCall.args === "object" &&
+            toolCall.args !== null &&
+            "query" in toolCall.args
+          ) {
+            query = (toolCall.args as { query: string }).query;
+          }
           const toolCallId = toolCall.toolCallId;
           if (processedToolCallIds.has(toolCallId)) {
             return;
           }
           processedToolCallIds.add(toolCallId);
-          const query = toolCall.args as string;
           const result = await performMySchemeSearch(query);
 
           // Mark this tool call as completed
