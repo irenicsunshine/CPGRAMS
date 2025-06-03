@@ -29,7 +29,8 @@ const SYSTEM_PROMPT = `You are Seva, a compassionate and knowledgeable digital a
      - Full name and contact details
 3. Only AFTER collecting sufficient information, use the classifyGrievance tool to identify the most appropriate department, category, and subcategory
 4. If new information emerges that might affect classification, re-classify the grievance using the classifyGrievance tool
-5. Explain the grievance filing process and what the citizen can expect
+5. If the grievance is about a government scheme, use the performMySchemeSearch tool to search for information about the scheme. Review the pageContent to determine if the grievance can be immediately resolved using information on the myscheme website and create a grievance if not.
+6. Explain the grievance filing process and what the citizen can expect
 
 **Information Collection Strategy:**
 - Begin with open-ended questions to understand the general nature of the grievance
@@ -91,6 +92,13 @@ export async function POST(req: Request) {
             .describe(
               "Priority level based on the urgency and impact of the grievance"
             ),
+        }),
+      },
+      performMySchemeSearch: {
+        name: "performMySchemeSearch",
+        description: "Search the *.myscheme.gov.in for any scheme-related grievance, in case their grievance can be immediately resolved using information on the myscheme website.",
+        parameters: z.object({
+          query: z.string().describe("Search query")
         }),
       },
     },
