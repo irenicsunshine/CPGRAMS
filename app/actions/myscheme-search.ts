@@ -29,13 +29,17 @@ export async function performMySchemeSearch(query: string): Promise<WebSearchRes
     };
   }
 
-  const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX_ID}&q=${encodeURIComponent(query)}&num=5`; // Fetch top 3 results
+  const searchUrl = `https://www.googleapis.com/customsearch/v1?cx=${GOOGLE_CX_ID}&q=${encodeURIComponent(query)}&num=5`; // Fetch top 3 results
 
   console.log(`Performing Google search for: "${query}" on ${SEARCH_DOMAIN}`);
   console.log(searchUrl);
 
   try {
-    const response = await fetch(searchUrl);
+    const response = await fetch(searchUrl, {
+      headers: {
+        'X-Goog-Api-Key': GOOGLE_API_KEY
+      }
+    });
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Google Search API request failed:', errorData);
@@ -57,7 +61,7 @@ export async function performMySchemeSearch(query: string): Promise<WebSearchRes
       snippet: item.snippet,
     }));
 
-    // Fetch page content for the top 2 results
+    // Fetch page content
     const contentFetchPromises = items.map(async (item) => {
       try {
         console.log(`Fetching content for: ${item.link}`);

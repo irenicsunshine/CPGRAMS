@@ -116,7 +116,7 @@ export async function POST(req: Request) {
         name: "performMySchemeSearch",
         description: "Search the *.myscheme.gov.in for any scheme-related grievance, in case their grievance can be immediately resolved using information on the myscheme website.",
         parameters: z.object({
-          query: z.string().describe("Search query. This must be a paraphrased version of the user query optimized for search, and must not contain any information not provided by the user.")
+          query: z.string().describe("Search query. This must be based solely on the user query, but optimized for search, and must not contain any information not provided by the user.")
         }),
       },
     },
