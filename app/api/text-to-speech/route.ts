@@ -1,6 +1,13 @@
-import { ElevenLabsClient, play } from "@elevenlabs/elevenlabs-js";
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "stream";
+
+interface PotentialErrorStructure {
+  message?: unknown;
+  body?: {
+    detail?: unknown;
+  };
+}
 
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -56,23 +63,24 @@ export async function POST(request: NextRequest) {
         "Content-Type": "audio/mpeg",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("ElevenLabs API error:", error);
     let errorMessage = "Failed to convert text to speech.";
-    if (error.message) {
+    if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === "string") {
       errorMessage = error;
+    } else if (typeof error === 'object' && error !== null) {
+      const potentialError = error as PotentialErrorStructure;
+      if (typeof potentialError.message === 'string') {
+        errorMessage = potentialError.message;
+      }
+      // Check for specific ElevenLabs error structures if available
+      // This allows body.detail to override a generic message if both exist and detail is more specific
+      if (potentialError.body && typeof potentialError.body.detail === 'string') {
+        errorMessage = potentialError.body.detail;
+      }
     }
-    // Check for specific ElevenLabs error structures if available
-    // For example, if error.body might contain more info
-    if (error.body && typeof error.body.detail === "string") {
-      errorMessage = error.body.detail;
-    }
-
-    return NextResponse.json(
-      { error: "Failed to convert text to speech", details: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

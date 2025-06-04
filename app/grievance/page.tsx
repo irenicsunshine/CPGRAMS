@@ -6,6 +6,7 @@ import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Mic, Square } from "lucide-react";
+import { performMySchemeSearch } from "@/app/actions/myscheme-search";
 
 interface ToolInvocation {
   toolCallId: string;
@@ -214,6 +215,33 @@ export default function GrievancePage() {
             toolCallId,
             result: result,
           });
+        } else if (toolCall.toolName === "performMySchemeSearch") {
+          let query = "";
+          if (
+            typeof toolCall.args === "object" &&
+            toolCall.args !== null &&
+            "query" in toolCall.args
+          ) {
+            query = (toolCall.args as { query: string }).query;
+          }
+          const toolCallId = toolCall.toolCallId;
+          if (processedToolCallIds.has(toolCallId)) {
+            return;
+          }
+          processedToolCallIds.add(toolCallId);
+          const result = await performMySchemeSearch(query);
+
+          // Mark this tool call as completed
+          setActiveToolCalls((prev) => {
+            const updated = { ...prev };
+            delete updated[toolCallId];
+            return updated;
+          });
+
+          addToolResult({
+            toolCallId,
+            result: result,
+          });
         }
       };
     })(),
@@ -222,7 +250,6 @@ export default function GrievancePage() {
   // ElevenLabs Speech-to-Text states
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -264,12 +291,13 @@ export default function GrievancePage() {
         const newText = input ? `${input} ${result.text}` : result.text;
         setInput(newText);
       } else {
-        setRecordingError('No speech detected. Please try again.');
+        // Consider how to inform the user about no speech detected if necessary
+        console.warn('No speech detected. Please try again.');
       }
 
     } catch (error) {
       console.error('Transcription error:', error);
-      setRecordingError(error instanceof Error ? error.message : 'Transcription failed');
+      // Consider how to inform the user about transcription failure if necessary
     } finally {
       setIsProcessing(false);
     }
@@ -278,7 +306,6 @@ export default function GrievancePage() {
   // Start recording audio
   const startRecording = useCallback(async () => {
     try {
-      setRecordingError(null);
       // Prevent multiple recordings
       if (isRecording || isProcessing) return;
 
@@ -319,9 +346,9 @@ export default function GrievancePage() {
 
     } catch (error) {
       console.error('Error starting recording:', error);
-      setRecordingError('Failed to access microphone. Please check permissions.');
+      // Consider displaying this error to the user in a different way if needed
     }
-  }, [transcribeAudio]);
+  }, [transcribeAudio, isProcessing, isRecording]);
 
   // Stop recording audio
   const stopRecording = useCallback(() => {

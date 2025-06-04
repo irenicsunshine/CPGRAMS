@@ -56,3 +56,16 @@ export interface GrievanceResponse {
   grievances: Grievance[];
   total: number;
 }
+
+export interface WebSearchResultItem {
+  title: string;
+  link: string;
+  snippet: string;
+  pageContent?: string;
+}
+
+export interface WebSearchResults {
+  success: boolean;
+  data?: WebSearchResultItem[];
+  error?: string;
+}
