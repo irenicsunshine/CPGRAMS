@@ -1,11 +1,13 @@
 "use client";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Mic, Square } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserIcon from '../components/Icons';
 import { performMySchemeSearch } from "@/app/actions/myscheme-search";
 
 interface ToolInvocation {
@@ -367,24 +369,38 @@ export default function GrievancePage() {
   };
 
   return (
-    <div className="flex flex-col bg-gray-50 min-h-[calc(85vh)]">
+    <div className={cn("flex flex-col bg-gray-50 min-h-[calc(85vh)]", { "justify-center": chatMessages.length === 0 })}> 
       {/* Chat messages area */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className={cn("overflow-y-auto p-6", { "flex-1": chatMessages.length > 0 })}> 
         <div className="max-w-3xl mx-auto space-y-6">
           {chatMessages.length === 0 && (
-            <div className="text-center py-10">
-              <p className="text-gray-500">
-                Submit your grievance using the input box below
+            <div className="p-6 m-4 rounded-lg border bg-assistant">
+              <p className="text-primary font-bold">
+                Namaste! Welcome to the CPGRAMS Grievance Redress Portal.
+              </p>
+              <p className="text-primary font-bold my-2">
+                I'm Seva, your digital assistant. How can I help you today?
+              </p>
+              <p className="text-primary my-2">
+                Would you like to file a grievance or do you need information about a specific government scheme or service?
               </p>
             </div>
           )}
-          {parsedMessages.map((message: Message, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-lg ${message.role === "user"
-                ? "bg-blue-100 ml-auto max-w-[80%] text-right"
-                : "bg-gray-100 mr-auto max-w-[80%] break-words"
-                }`}
+          {parsedMessages.map((message: Message, index) => {
+            const isUser = message.role === "user";
+            return (
+            <div key={index} className={`flex items-start gap-3 my-6 ${isUser ? 'justify-end ml-auto' : 'justify-start mr-auto'} max-w-[90%]`}>
+              {!isUser && (
+                <Avatar className="w-8 h-8 border">
+                  <AvatarFallback>S</AvatarFallback>
+                </Avatar>
+              )}
+              <div
+                className={`rounded-lg border px-6 ${
+                isUser
+                  ? `bg-user text-right ${message.content.length < 50 && !message.content.includes('\n') ? 'w-fit py-4' : 'max-w-full py-6'}`
+                  : "bg-assistant break-words max-w-full py-6"
+              }`}
             >
               {message.parts?.map((part, partIndex) => {
                 if (part.type === "text") {
@@ -392,7 +408,7 @@ export default function GrievancePage() {
                   return part.text?.trim() ? (
                     <p
                       key={partIndex}
-                      className="text-gray-800 whitespace-pre-wrap mb-2"
+                      className="text-default whitespace-pre-wrap"
                     >
                       {part.text}
                     </p>
@@ -420,7 +436,7 @@ export default function GrievancePage() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap">
+                        <p className="text-default font-mono text-sm whitespace-pre-wrap">
                           {part.text}
                         </p>
                       </div>
@@ -461,16 +477,25 @@ export default function GrievancePage() {
                 }
                 return null;
               })}
-              <span className="text-xs text-gray-500 mt-1 block">
-                {message.role === "user" ? "You" : "Assistant"}
-              </span>
             </div>
-          ))}
+            {isUser && (
+              <Avatar className="w-8 h-8 border">
+                {/* AvatarImage removed as we are using the icon directly in fallback */}
+                <AvatarFallback className="bg-transparent"> {/* Making fallback background transparent if needed */}
+                  <UserIcon className="w-5 h-5 fill-primary" /> {/* Adjusted size for icon within avatar */}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+          );}
+        )}
 
           {/* Show tool call in progress indicator */}
-          {hasActiveToolCalls && (
-            <div className="bg-gray-100 mr-auto max-w-[80%] break-words p-4 rounded-lg">
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 my-3">
+          {hasActiveToolCalls && 
+          (
+            <div className="bg-background flex items-start gap-3 max-w-[80%] break-words rounded-lg justify-start mr-auto">
+              <div className="w-8 h-8"></div>
+              <div className="bg-assistant border border-blue-200 rounded-md p-3 my-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded mr-2">
@@ -488,9 +513,6 @@ export default function GrievancePage() {
                   </p>
                 </div>
               </div>
-              <span className="text-xs text-gray-500 mt-1 block">
-                Assistant
-              </span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -498,11 +520,11 @@ export default function GrievancePage() {
       </main>
 
       {/* Input area */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-white p-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 transition-all hover:shadow-xl p-1">
-            <Input
-              type="text"
+            <Textarea
+              
               value={input}
               onChange={(event) => {
                 setInput(event.target.value);
@@ -514,7 +536,7 @@ export default function GrievancePage() {
                 }
               }}
               placeholder={isRecording ? "Recording... Speak now" : isProcessing ? "Processing speech..." : "Provide your grievance here..."}
-              className="flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:border-transparent px-5 py-3"
+              className={cn("flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:border-transparent px-5 py-3 resize-none", { "h-20": chatMessages.length === 0 })}
               disabled={isResponding}
               autoFocus
             />

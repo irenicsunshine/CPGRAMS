@@ -27,24 +27,26 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        <header className="w-full py-4 border-b bg-[#1d4e8f] text-white">
+        <header className="w-full py-4 border-b bg-primary text-white fixed top-0 left-0 right-0 z-50">
           <div className="container mx-auto flex justify-between items-center px-4">
             <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center">
-                <span className="text-[#1d4e8f] font-bold text-sm">GOI</span>
+              <div className="h-10 w-10 bg-background rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold text-sm">GOI</span>
               </div>
               <h1 className="text-xl font-bold">CPGRAMS</h1>
             </div>
-            <div className="text-sm">
+            <div className="text-sm text-white">
               <span>
                 Centralized Public Grievance Redress and Monitoring System
               </span>
             </div>
           </div>
         </header>
-        {children}
+        <main className="flex-grow overflow-y-auto pt-[4.5rem]">
+          {children}
+        </main>
         <Toaster />
       </body>
     </html>
