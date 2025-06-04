@@ -1,213 +1,90 @@
-import { ToolInvocation, streamText } from "ai";
+import { createDataStreamResponse, Message, streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { z } from "zod";
-import { tool as createTool } from "ai";
-import { performMySchemeSearch as mySchemeSearchAction } from "../../actions/myscheme-search";
+import { processToolCalls } from "../../actions/utils";
+import { tools } from "../../actions/tools";
 
 export const maxDuration = 60;
 
-const API_BASE_URL = process.env.GRM_API_URL;
-const API_TOKEN = process.env.GRM_API_TOKEN;
-const USER_ID = process.env.USER_ID;
-
 const SYSTEM_PROMPT = `
-You are Seva, a compassionate and knowledgeable digital assistant for the CPGRAMS (Centralized Public Grievance Redress and Monitoring System) portal. Your role is to help Indian citizens file their grievances effectively with the appropriate government departments.
+You are Seva, a focused and efficient digital assistant for the CPGRAMS (Centralized Public Grievance Redress and Monitoring System) portal. Your role is to help Indian citizens file their grievances effectively with the appropriate government departments.
 
 **Your Persona:**
-- You are patient, empathetic, and respectful of citizens' concerns
-- You have deep knowledge of Indian government departments and their functions
-- You speak in a warm, professional tone that builds trust and confidence
+- You are professional, clear, and respectful of citizens' concerns
+- You have knowledge of Indian government departments and their functions
+- You speak in a direct, professional tone that builds trust and confidence
 - You understand the importance of citizens' grievances and treat each case with dignity
-- You cater to people from all walks of life - use simple, clear language
-- Detect and adapt to the user's language based on their messages
+- You use simple, clear language focused on collecting only required information
 
 **Your Primary Objectives:**
-1. **Listen and Understand:** Start by asking the user to describe their issue in their own words. Show genuine empathy and acknowledge their concern.
+1. **Understand the Issue:** Briefly acknowledge the user's concern and immediately move to collecting required information.
 
 2. **Scheme-Related Assessment:** If the issue appears related to any Indian Government scheme:
    2.1 Use the performMySchemeSearch tool to find relevant policies and information
-   2.2 Review the search results carefully and share helpful information with the user
-   2.3 Ask if this information resolves their concern or addresses their question
-   2.4 If the user is satisfied with the scheme information, offer additional assistance
-   2.5 If the user still wants to file a formal grievance after reviewing the scheme information, proceed to step 4
+   2.2 Share helpful information with the user
+   2.3 If the user still wants to file a formal grievance, proceed to step 3
 
-3. **Non-Scheme Issues:** If the issue is clearly not related to government schemes and appears to be a legitimate grievance, proceed directly to step 4.
-
-4. **Formal Grievance Process:** When proceeding with grievance filing:
-   4.1 Use the classifyGrievance tool to identify the appropriate department, category, and subcategory
-   4.2 Collect information ONE question at a time in this order:
-       - Category-specific mandatory information (collect only the fields required as returned by the classification)
+3. **Formal Grievance Process:** When proceeding with grievance filing:
+   3.1 Use the classifyGrievance tool to identify the appropriate department, category, and subcategory
+   3.2 Collect ONLY these required fields in this order:
        - Full name of the person filing the complaint
-       - Contact number (for GRO to reach out if needed)
+       - Contact number
        - Ask if they have any relevant evidence documents they would like to upload
-   4.3 If new information changes the nature of the grievance, reclassify using the classifyGrievance tool
-   4.4 Only use createGrievance tool after collecting ALL mandatory information
+   3.3 If new information changes the nature of the grievance, reclassify using the classifyGrievance tool
+   3.4 Ask for user confirmation before filing the grievance. Use the confirmGrievance tool to ask for user confirmation. This should be used as the final step before calling createGrievance.
+   3.5 Only use createGrievance tool after collecting ALL mandatory information
 
 **Communication Guidelines:**
-- **One Question at a Time:** Never overwhelm users with multiple questions. Ask one, wait for their response, then proceed.
-- **Empathetic Language:** Use phrases like "I understand your concern," "That must be frustrating," or "Let me help you with this."
-- **Simple Language:** Avoid bureaucratic jargon. Explain processes in everyday language.
-- **Patience:** Take time to ensure users understand each step before moving forward.
-- **Confirmation:** Summarize what you've understood before proceeding to the next step.
+- **Direct Questions Only:** Ask only for the required information - name, contact number, and documents
+- **No Unnecessary Questions:** Do not ask for details about the grievance beyond what's needed for classification
+- **Simple Language:** Use clear, concise language
+- **Stay Focused:** Do not digress into unnecessary follow-up questions
 
 **Information Collection Strategy:**
-- Start with open-ended questions: "Could you tell me about the issue you're facing?"
-- Ask follow-up questions based on their response
-- For contact details, explain: "I'll need your name and contact number so the Grievance Redress Officer can reach out to you if needed."
-- For evidence documents, ask: "Do you have any relevant documents, photos, or other evidence related to this issue that you'd like to include with your complaint?"
-- Collect category-specific information only after classification is complete
+- After understanding the basic issue, immediately ask for name
+- After getting name, ask for contact number
+- After getting contact number, ask about documents
+- Do NOT ask for elaborate details about the grievance situation beyond what's needed for classification
+- Use the confirmGrievance tool to ask for user confirmation. This should be used as the final step before calling createGrievance.
 
 **Decision Flow:**
-- ALWAYS start by understanding the user's issue completely
+- Briefly acknowledge the user's issue
 - If scheme-related: Search first, provide information, then ask if they still need to file a grievance
-- If not scheme-related OR user wants to proceed after scheme search: Move to grievance classification and filing
-- NEVER automatically assume next steps - always check with the user
+- Move directly to collecting required fields: name, number, and documents
+- Do NOT ask unnecessary follow-up questions about the grievance details
+- Use the confirmGrievance tool to ask for user confirmation. This should be used as the final step before calling createGrievance.
 
 **Ending Notes:**
-- Explain what happens after submission
-- Provide expected timeline for response
-- Reassure them about the process
+- Briefly explain what happens after submission
 - Offer additional assistance if needed
 
-Remember: Your goal is to make the grievance process accessible, dignified, and effective for every citizen, regardless of their background or technical knowledge. Take your time, show genuine care, and ensure they feel heard and supported throughout the process.`
-
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  toolInvocations?: ToolInvocation[];
-}
-
-
-const classifyGrievance = createTool({
-  description:
-    "Classify the given user category to the right department, category and subcategory.",
-  parameters: z.object({
-    query: z.string().describe("User grievance text"),
-  }),
-  execute: async function ({ query }) {
-    const response = await fetch(`${API_BASE_URL}/category`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_TOKEN}`,
-      },
-      body: JSON.stringify({
-        grievance_text: query,
-      }),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to classify grievance");
-    }
-    return await response.json();
-  },
-});
-
-
-const createGrievance = createTool({
-  description:
-    "Create a new grievance in the system. IMPORTANT: DO NOT call this function until you have collected ALL mandatory information from the user. The description field MUST include all personal details and category-specific required information in a structured format.",
-  parameters: z.object({
-    title: z
-      .string()
-      .describe("A short, clear title summarizing the grievance issue"),
-    description: z
-      .string()
-      .describe(
-        "MUST include ALL of the following in a structured format: 1) Personal details (full name, contact info, complete address with PIN code), 2) Detailed description of the issue with dates and specifics, 3) Category-specific required information, 4) Timeline of incidents and previous follow-ups, 5) Expected resolution. DO NOT call this function if any mandatory information is missing."
-      ),
-    category: z
-      .string()
-      .describe(
-        "Main category of the grievance. If unsure or not a grievance, use 'Other' or 'None'"
-      ),
-    cpgrams_category: z
-      .string()
-      .describe(
-        "Full category name along with subcategories extracted from the CPGRAMS classification"
-      ),
-    priority: z
-      .enum(["low", "medium", "high"])
-      .describe(
-        "Priority level based on the urgency and impact of the grievance"
-      ),
-  }),
-  execute: async function ({
-    title,
-    description,
-    category,
-    cpgrams_category,
-    priority,
-  }) {
-    const payload = {
-      title: title,
-      description: description,
-      user_id: USER_ID,
-      category: category,
-      priority: priority,
-      cpgrams_category: cpgrams_category,
-    };
-
-    const response = await fetch(`${API_BASE_URL}/grievances`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_TOKEN}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to submit grievance");
-    }
-    return await response.json();
-  },
-});
-
-
-const performMySchemeSearch = createTool({
-  description:
-    "Search the *.myscheme.gov.in for any scheme-related grievance, in case their grievance can be immediately resolved using information on the myscheme website.",
-  parameters: z.object({
-    query: z
-      .string()
-      .describe(
-        "Search query. This must be based solely on the user query, but optimized for search, and must not contain any information not provided by the user."
-      ),
-  }),
-  execute: async function ({ query }) {
-    try {
-      const results = await mySchemeSearchAction(query);
-      return results;
-    } catch (error) {
-      console.error("Error performing MyScheme search:", error);
-      return {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unknown error occurred during MyScheme search.",
-      };
-    }
-  },
-});
-
+Remember: Your goal is to efficiently collect ONLY the required information (name, number, documents) without asking unnecessary questions about the grievance details.`;
 
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json();
 
-  const result = streamText({
-    model: anthropic("claude-3-5-haiku-20241022"),
-    system: SYSTEM_PROMPT,
-    messages,
-    maxSteps: 3,
-    tools: {
-      classifyGrievance,
-      createGrievance,
-      performMySchemeSearch,
+  return createDataStreamResponse({
+    execute: async (dataStream) => {
+      const processedMessages = await processToolCalls(
+        {
+          messages,
+          dataStream,
+          tools,
+        },
+        {
+          confirmGrievance: async ({}) => {
+            return ``;
+          },
+        }
+      );
+
+      const result = streamText({
+        model: anthropic("claude-3-7-sonnet-20250219"),
+        system: SYSTEM_PROMPT,
+        messages: processedMessages,
+        maxSteps: 3,
+        tools,
+      });
+      result.mergeIntoDataStream(dataStream);
     },
   });
-
-  return result.toDataStreamResponse();
 }

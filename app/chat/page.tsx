@@ -5,9 +5,13 @@ import { ClassifyGrievanceResult } from "../components/classify-grievance-result
 import { Send, User, Bot, Loader2, FileCheck, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { APPROVAL, getToolsRequiringConfirmation } from "../actions/utils";
+import { tools } from "../actions/tools";
 
 export default function Page() {
-  const { messages, input, setInput, handleSubmit, isLoading } = useChat();
+  const { messages, input, setInput, handleSubmit, isLoading, addToolResult } =
+    useChat();
+  const toolsRequiringConfirmation = getToolsRequiringConfirmation(tools);
 
   return (
     <main className="flex flex-col min-h-[calc(85vh)] max-w-4xl mx-auto">
@@ -20,8 +24,8 @@ export default function Page() {
                 Welcome to the Grievance Handling Assistant
               </h3>
               <p className="text-gray-600">
-                Describe your issue and I&apos;ll help you resolve it with empathy
-                and guidance.
+                Describe your issue and I&apos;ll help you resolve it with
+                empathy and guidance.
               </p>
             </div>
           </div>
@@ -70,7 +74,84 @@ export default function Page() {
                           part.type === "tool-invocation" &&
                           part.toolInvocation
                         ) {
-                          const { toolName, state } = part.toolInvocation;
+                          const { toolName, state, toolCallId } =
+                            part.toolInvocation;
+
+                          if (
+                            toolsRequiringConfirmation.includes(toolName) &&
+                            state === "call"
+                          ) {
+                            console.log("toolCallId", toolCallId);
+                            console.log("part", part);
+
+                            return (
+                              <div
+                                key={toolCallId}
+                                className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
+                              >
+                                <div className="mb-3">
+                                  <h4 className="text-lg font-medium text-gray-800 mb-2">
+                                    Confirm Grievance Filing
+                                  </h4>
+                                  <p className="text-gray-600 mb-2">
+                                    Are you ready to file this grievance?
+                                  </p>
+
+                                  {part.toolInvocation.args.priority && (
+                                    <div className="mb-2">
+                                      <span className="font-medium">
+                                        Priority:
+                                      </span>{" "}
+                                      <span
+                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                          part.toolInvocation.args.priority ===
+                                          "high"
+                                            ? "bg-red-100 text-red-800"
+                                            : part.toolInvocation.args
+                                                .priority === "medium"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-green-100 text-green-800"
+                                        }`}
+                                      >
+                                        {part.toolInvocation.args.priority
+                                          .charAt(0)
+                                          .toUpperCase() +
+                                          part.toolInvocation.args.priority.slice(
+                                            1
+                                          )}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex gap-3">
+                                  <Button
+                                    className="text-white px-4 py-2 rounded-md flex items-center gap-2"
+                                    onClick={() =>
+                                      addToolResult({
+                                        toolCallId,
+                                        result: APPROVAL.YES,
+                                      })
+                                    }
+                                  >
+                                    Yes, File Grievance
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
+                                    onClick={() =>
+                                      addToolResult({
+                                        toolCallId,
+                                        result: APPROVAL.NO,
+                                      })
+                                    }
+                                  >
+                                    No, Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          }
 
                           if (state === "result") {
                             if (toolName === "createGrievance") {

@@ -1,4 +1,14 @@
-import React from "react";
+import React, { useRef } from "react";
+import { Download } from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface CreateGrievanceResultProps {
   id?: string;
@@ -17,50 +27,88 @@ export const CreateGrievanceResult: React.FC<CreateGrievanceResultProps> = ({
   title,
   description,
   cpgrams_category,
-  priority
+  priority,
 }) => {
+  const grievanceRef = useRef<HTMLDivElement>(null);
+
+  const generatePDF = () => {
+    console.log("generatePDF");
+  };
+
+  const getPriorityVariant = (priority?: string) => {
+    switch (priority?.toLowerCase()) {
+      case "high":
+        return "destructive";
+      case "medium":
+        return "secondary";
+      default:
+        return "default";
+    }
+  };
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-2">
-      <h3 className="text-lg font-semibold text-green-800 mb-2">
-        Grievance Created Successfully
-      </h3>
-      <div className="grid grid-cols-1 gap-2">
-        <div className="flex">
-          <span className="font-medium text-green-700 w-32">ID:</span>
-          <span className="text-gray-800">{id || "N/A"}</span>
-        </div>
-        <div className="flex">
-          <span className="font-medium text-green-700 w-32">Title:</span>
-          <span className="text-gray-800">{title || "N/A"}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-medium text-green-700 mb-1">Description:</span>
-          <p className="text-gray-800 bg-white p-2 rounded border border-green-100 text-sm">
-            {description || "N/A"}
-          </p>
-        </div>
-        <div className="flex">
-          <span className="font-medium text-green-700 w-32">
-            CPGRAMS Category:
-          </span>
-          <span className="text-gray-800">{cpgrams_category || "N/A"}</span>
-        </div>
-        <div className="flex">
-          <span className="font-medium text-green-700 w-32">Priority:</span>
-          <span
-            className={`font-medium ${
-              priority === "high"
-                ? "text-red-600"
-                : priority === "medium"
-                ? "text-yellow-600"
-                : "text-blue-600"
-            }`}
-          >
-            {priority ? priority.toUpperCase() : "N/A"}
-          </span>
-        </div>
+    <Card className="border-slate-100 overflow-hidden">
+      <CardHeader className="border-b border-slate-100 flex-row items-center gap-3 pb-4">
+        <CardTitle className="text-xl">
+          Grievance Created Successfully
+        </CardTitle>
+      </CardHeader>
+
+      {/* Content */}
+      <div ref={grievanceRef}>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <span className="font-medium text-gray-600 w-32 mb-1 sm:mb-0">
+                ID:
+              </span>
+              <code className="font-mono bg-gray-50 px-3 py-1 rounded border border-purple-100">
+                {id || "N/A"}
+              </code>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <span className="font-medium text-gray-600 w-32 mb-1 sm:mb-0">
+                Title:
+              </span>
+              <span className="text-gray-800">{title || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="font-medium text-gray-600 mb-2">
+                Description:
+              </span>
+              <div className="text-gray-800 bg-gray-50 p-4 rounded border border-purple-100 text-sm whitespace-pre-wrap">
+                {description || "N/A"}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <span className="font-medium text-gray-600 w-32 mb-1 sm:mb-0">
+                Category:
+              </span>
+              <span className="text-gray-800">{cpgrams_category || "N/A"}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <span className="font-medium text-gray-600 w-32 mb-1 sm:mb-0">
+                Priority:
+              </span>
+              <Badge variant={getPriorityVariant(priority)}>
+                {priority ? priority.toUpperCase() : "N/A"}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
       </div>
-    </div>
+
+      {/* Footer with Download Button */}
+      <CardFooter className="border-t justify-end">
+        <Button onClick={generatePDF}>
+          <Download size={18} />
+          Download PDF
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };

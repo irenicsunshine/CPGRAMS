@@ -30,9 +30,6 @@ export const ClassifyGrievanceResult: React.FC<
   if (!categories || categories.length === 0) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-2">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">
-          Grievance Classification
-        </h3>
         <p className="text-gray-800">No classification results available</p>
       </div>
     );
@@ -46,10 +43,6 @@ export const ClassifyGrievanceResult: React.FC<
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-2">
-      <h3 className="text-lg font-semibold text-blue-800 mb-2">
-        Grievance Classification
-      </h3>
-
       <div className="grid grid-cols-1 gap-3">
         {/* Show CPGRAMS category if available */}
         {topCategory.concat_grievance_category && (
@@ -64,7 +57,7 @@ export const ClassifyGrievanceResult: React.FC<
         )}
 
         {/* Show form fields if available */}
-        {topCategory.gpt_form_field_generation && (
+        {/* {topCategory.gpt_form_field_generation && (
           <div className="flex flex-col mt-2">
             <span className="font-medium text-blue-700 mb-1">
               Required Information:
@@ -102,7 +95,7 @@ export const ClassifyGrievanceResult: React.FC<
               })()}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
