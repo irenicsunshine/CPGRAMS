@@ -32,7 +32,7 @@ export async function performMySchemeSearch(
 
   const searchUrl = `https://www.googleapis.com/customsearch/v1?cx=${GOOGLE_CX_ID}&q=${encodeURIComponent(
     query
-  )}&num=5`; // Fetch top 3 results
+  )}&num=10`;
 
   console.log(`Performing Google search for: "${query}" on ${SEARCH_DOMAIN}`);
   console.log(searchUrl);

@@ -20,8 +20,10 @@ You are Seva, a focused and efficient digital assistant for the CPGRAMS (Central
 
 2. **Scheme-Related Assessment:** If the issue appears related to any Indian Government scheme:
    2.1 Use the performMySchemeSearch tool to find relevant policies and information
-   2.2 Share helpful information with the user
-   2.3 If the user still wants to file a formal grievance, proceed to step 3
+   2.2 Review the search results carefully. For each relevant scheme or piece of information, summarize it and **ALWAYS include the direct page link as a citation in markdown format, like [Scheme Name](URL).** For example, if you find a scheme named 'Pradhan Mantri Awas Yojana' at 'https://pmay.gov.in', you should cite it as '[Pradhan Mantri Awas Yojana](https://pmay.gov.in)'.
+   2.3 Ask if this information resolves their concern or addresses their question
+   2.4 If the user is satisfied with the scheme information, offer additional assistance
+   2.5 If the user still wants to file a formal grievance after reviewing the scheme information, proceed to step 4
 
 3. **Formal Grievance Process:** When proceeding with grievance filing:
    3.1 Use the classifyGrievance tool to identify the appropriate department, category, and subcategory
@@ -51,15 +53,139 @@ You are Seva, a focused and efficient digital assistant for the CPGRAMS (Central
 
 **Decision Flow:**
 - Briefly acknowledge the user's issue
-- If scheme-related: Search first, provide information, then ask if they still need to file a grievance
-- Move directly to collecting required fields: name, number, and documents
+- ALWAYS start by understanding the user's issue completely
+- If scheme-related: Search first, provide information including links, then ask if they still need to file a grievance
+- If not scheme-related OR user wants to proceed after scheme search: Move to grievance classification and filing
 - Do NOT ask unnecessary follow-up questions about the grievance details
 
 **Ending Notes:**
 - Briefly explain what happens after submission
 - Offer additional assistance if needed
 
-Remember: Your goal is to efficiently collect ONLY the required information (name, number, documents) without asking unnecessary questions about the grievance details.`;
+Remember: Your goal is to make the grievance process accessible, dignified, and effective for every citizen, regardless of their background or technical knowledge. Take your time, show genuine care, and ensure they feel heard and supported throughout the process.`
+
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  toolInvocations?: ToolInvocation[];
+}
+
+
+const classifyGrievance = createTool({
+  description:
+    "Classify the given user category to the right department, category and subcategory.",
+  parameters: z.object({
+    query: z.string().describe("User grievance text"),
+  }),
+  execute: async function ({ query }) {
+    const response = await fetch(`${API_BASE_URL}/category`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+      body: JSON.stringify({
+        grievance_text: query,
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to classify grievance");
+    }
+    return await response.json();
+  },
+});
+
+
+const createGrievance = createTool({
+  description:
+    "Create a new grievance in the system. IMPORTANT: DO NOT call this function until you have collected ALL mandatory information from the user. The description field MUST include all personal details and category-specific required information in a structured format.",
+  parameters: z.object({
+    title: z
+      .string()
+      .describe("A short, clear title summarizing the grievance issue"),
+    description: z
+      .string()
+      .describe(
+        "MUST include ALL of the following in a structured format: 1) Personal details (full name, contact info, complete address with PIN code), 2) Detailed description of the issue with dates and specifics, 3) Category-specific required information, 4) Timeline of incidents and previous follow-ups, 5) Expected resolution. DO NOT call this function if any mandatory information is missing."
+      ),
+    category: z
+      .string()
+      .describe(
+        "Main category of the grievance. If unsure or not a grievance, use 'Other' or 'None'"
+      ),
+    cpgrams_category: z
+      .string()
+      .describe(
+        "Full category name along with subcategories extracted from the CPGRAMS classification"
+      ),
+    priority: z
+      .enum(["low", "medium", "high"])
+      .describe(
+        "Priority level based on the urgency and impact of the grievance"
+      ),
+  }),
+  execute: async function ({
+    title,
+    description,
+    category,
+    cpgrams_category,
+    priority,
+  }) {
+    const payload = {
+      title: title,
+      description: description,
+      user_id: USER_ID,
+      category: category,
+      priority: priority,
+      cpgrams_category: cpgrams_category,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/grievances`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to submit grievance");
+    }
+    return await response.json();
+  },
+});
+
+
+const performMySchemeSearch = createTool({
+  description:
+    "Search the *.myscheme.gov.in for any scheme-related grievance, in case their grievance can be immediately resolved using information on the myscheme website.",
+  parameters: z.object({
+    query: z
+      .string()
+      .describe(
+        "Search query. This must be based solely on the user's description, but optimized for search, including keywords that best describe the user's situation (e.g. state, age group, etc.)."
+      ),
+  }),
+  execute: async function ({ query }) {
+    try {
+      const results = await mySchemeSearchAction(query);
+      return results;
+    } catch (error) {
+      console.error("Error performing MyScheme search:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unknown error occurred during MyScheme search.",
+      };
+    }
+  },
+});
+
 
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json();

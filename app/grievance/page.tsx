@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useEffect, useState, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 import { useChat } from "@ai-sdk/react";
 import { Textarea } from "@/components/ui/textarea";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
@@ -426,12 +427,14 @@ export default function GrievancePage() {
                     if (part.type === "text") {
                       // Only render text parts if they have content
                       return part.text?.trim() ? (
-                        <p
-                          key={partIndex}
-                          className="text-default whitespace-pre-wrap"
+                        <div 
+                          key={partIndex + '-container'}
+                          className="text-default max-w-none text-default whitespace-pre-wrap mb-2"
                         >
-                          {part.text}
-                        </p>
+                          <ReactMarkdown
+                            children={part.text}
+                          />
+                        </div>
                       ) : null;
                     } else if (part.type === "tool-invocation") {
                       if (part.toolInvocation?.state === "call") {
