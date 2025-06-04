@@ -1,8 +1,11 @@
 "use client";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Mic, Square } from "lucide-react";
 
 interface ToolInvocation {
   toolCallId: string;
@@ -17,12 +20,12 @@ interface ToolInvocation {
 
 interface MessagePart {
   type:
-    | "text"
-    | "tool-invocation"
-    | "reasoning"
-    | "source"
-    | "file"
-    | "step-start";
+  | "text"
+  | "tool-invocation"
+  | "reasoning"
+  | "source"
+  | "file"
+  | "step-start";
   text?: string;
   toolInvocation?: ToolInvocation;
   // Additional fields for other part types can be added as needed
@@ -216,6 +219,13 @@ export default function GrievancePage() {
     })(),
   });
 
+  // ElevenLabs Speech-to-Text states
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // Parse message content into parts for each message
   const parsedMessages = chatMessages.map((message: Message) => ({
     ...message,
@@ -232,6 +242,103 @@ export default function GrievancePage() {
     }
   }, [chatMessages]);
 
+  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
+
+      const response = await fetch('/api/speech-to-text', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Transcription failed');
+      }
+
+      const result = await response.json();
+
+      if (result.text && result.text.trim()) {
+        // Append transcribed text to existing input
+        const newText = input ? `${input} ${result.text}` : result.text;
+        setInput(newText);
+      } else {
+        setRecordingError('No speech detected. Please try again.');
+      }
+
+    } catch (error) {
+      console.error('Transcription error:', error);
+      setRecordingError(error instanceof Error ? error.message : 'Transcription failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [input, setInput]);
+
+  // Start recording audio
+  const startRecording = useCallback(async () => {
+    try {
+      setRecordingError(null);
+      // Prevent multiple recordings
+      if (isRecording || isProcessing) return;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+        }
+      });
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: 'audio/webm;codecs=opus'
+        });
+
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setRecordingError('Failed to access microphone. Please check permissions.');
+    }
+  }, [transcribeAudio]);
+
+  // Stop recording audio
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsProcessing(true);
+    }
+  }, [isRecording]);
+
+  // Get recording status text
+  const getRecordingStatus = () => {
+    if (isProcessing) return "Processing speech...";
+    if (isRecording) return "Recording... Click to stop";
+    return "Click to start recording";
+  };
+
   return (
     <div className="flex flex-col bg-gray-50 min-h-[calc(85vh)]">
       {/* Chat messages area */}
@@ -247,11 +354,10 @@ export default function GrievancePage() {
           {parsedMessages.map((message: Message, index) => (
             <div
               key={index}
-              className={`p-4 rounded-lg ${
-                message.role === "user"
-                  ? "bg-blue-100 ml-auto max-w-[80%] text-right"
-                  : "bg-gray-100 mr-auto max-w-[80%] break-words"
-              }`}
+              className={`p-4 rounded-lg ${message.role === "user"
+                ? "bg-blue-100 ml-auto max-w-[80%] text-right"
+                : "bg-gray-100 mr-auto max-w-[80%] break-words"
+                }`}
             >
               {message.parts?.map((part, partIndex) => {
                 if (part.type === "text") {
@@ -380,11 +486,44 @@ export default function GrievancePage() {
                   setInput("");
                 }
               }}
-              placeholder="Provide your grievance here..."
+              placeholder={isRecording ? "Recording... Speak now" : isProcessing ? "Processing speech..." : "Provide your grievance here..."}
               className="flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:border-transparent px-5 py-3"
               disabled={isResponding}
               autoFocus
             />
+
+            {isRecording ? (
+              <Button
+                type="button"
+                onClick={stopRecording}
+                variant="outline"
+                size='icon'
+                className="rounded-full bg-red-50 border-red-200 hover:bg-red-100"
+                title="Stop recording"
+              >
+                <Square className="size-4 text-red-600" strokeWidth={1.75} />
+                {/* square */}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={startRecording}
+                variant="outline"
+                size='icon'
+                className={cn(
+                  "rounded-full",
+                  isProcessing && "bg-blue-50 border-blue-200"
+                )}
+                disabled={isProcessing}
+                title={getRecordingStatus()}
+              >
+                <Mic className={cn(
+                  "size-4",
+                  isProcessing ? "text-blue-600" : "text-current"
+                )} strokeWidth={1.75} />
+                {/* record */}
+              </Button>
+            )}
           </div>
         </div>
       </div>
