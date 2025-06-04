@@ -1,7 +1,5 @@
 # CPGRAMS Grievance Management System
 
-
-
 ## Getting Started
 
 > [!NOTE]
