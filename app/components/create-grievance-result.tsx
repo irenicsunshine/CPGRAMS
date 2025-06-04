@@ -9,19 +9,15 @@ interface CreateGrievanceResultProps {
   priority?: string;
   status?: string;
   created_at?: string;
-  [key: string]: any; // For any additional properties
+  [key: string]: unknown; // For any additional properties
 }
 
 export const CreateGrievanceResult: React.FC<CreateGrievanceResultProps> = ({
   id,
   title,
   description,
-  category,
   cpgrams_category,
-  priority,
-  status,
-  created_at,
-  ...rest
+  priority
 }) => {
 
   return (

@@ -20,12 +20,12 @@ interface ClassifyGrievanceResultProps {
     sub_category_5: string;
     sub_category_6: string;
   }>;
-  [key: string]: any; // For any additional properties
+  [key: string]: unknown; // For any additional properties
 }
 
 export const ClassifyGrievanceResult: React.FC<
   ClassifyGrievanceResultProps
-> = ({ categories = [], ...rest }) => {
+> = ({ categories = [] }) => {
   // If no categories or empty array, show a message
   if (!categories || categories.length === 0) {
     return (
@@ -77,7 +77,7 @@ export const ClassifyGrievanceResult: React.FC<
                   );
                   return (
                     <div className="grid grid-cols-1 gap-2">
-                      {formFields.map((field: any, index: number) => (
+                      {formFields.map((field: { field_name: string; mandatory?: boolean; description?: string }, index: number) => (
                         <div
                           key={index}
                           className="border-b border-blue-50 pb-2 last:border-0 last:pb-0"
@@ -92,7 +92,7 @@ export const ClassifyGrievanceResult: React.FC<
                       ))}
                     </div>
                   );
-                } catch (e) {
+                } catch {
                   return (
                     <p className="text-sm text-gray-600">
                       Form field information available but could not be parsed.

@@ -60,7 +60,15 @@ export async function performMySchemeSearch(
       };
     }
 
-    let items: WebSearchResultItem[] = rawResults.items.map((item: any) => ({
+    // Define a type for Google search result items
+    interface GoogleSearchResultItem {
+      title: string;
+      link: string;
+      snippet: string;
+      [key: string]: unknown;
+    }
+    
+    let items: WebSearchResultItem[] = rawResults.items.map((item: GoogleSearchResultItem) => ({
       title: item.title,
       link: item.link,
       snippet: item.snippet,
@@ -90,8 +98,8 @@ export async function performMySchemeSearch(
         pageText = pageText.replace(/\s\s+/g, " ").trim(); // Clean up whitespace
 
         return { ...item, pageContent: pageText.substring(0, 5000) }; // Limit content length
-      } catch (fetchError) {
-        console.error(`Error fetching content for ${item.link}:`, fetchError);
+      } catch (error) {
+        console.error(`Error fetching content for ${item.link}:`, error);
         return item; // Return item without pageContent in case of error
       }
     });
