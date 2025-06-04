@@ -3,6 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
+import { performMySchemeSearch } from "@/app/actions/myscheme-search";
 
 interface ToolInvocation {
   toolCallId: string;
@@ -199,6 +200,33 @@ export default function GrievancePage() {
             grievanceArgs.priority,
             grievanceArgs.cpgrams_category
           );
+
+          // Mark this tool call as completed
+          setActiveToolCalls((prev) => {
+            const updated = { ...prev };
+            delete updated[toolCallId];
+            return updated;
+          });
+
+          addToolResult({
+            toolCallId,
+            result: result,
+          });
+        } else if (toolCall.toolName === "performMySchemeSearch") {
+          let query = "";
+          if (
+            typeof toolCall.args === "object" &&
+            toolCall.args !== null &&
+            "query" in toolCall.args
+          ) {
+            query = (toolCall.args as { query: string }).query;
+          }
+          const toolCallId = toolCall.toolCallId;
+          if (processedToolCallIds.has(toolCallId)) {
+            return;
+          }
+          processedToolCallIds.add(toolCallId);
+          const result = await performMySchemeSearch(query);
 
           // Mark this tool call as completed
           setActiveToolCalls((prev) => {
