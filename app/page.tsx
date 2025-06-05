@@ -18,7 +18,7 @@ export default function Home() {
           </div>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link href="/grievance">
+            <Link href="/chat">
               <div className="p-6 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
                 <h3 className="font-semibold text-primary">
                   Lodge New Grievance
