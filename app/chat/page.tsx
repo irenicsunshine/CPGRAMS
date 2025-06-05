@@ -445,7 +445,7 @@ export default function Page() {
         {/* Input area */}
         <div className="bg-white p-4">
           <div className="max-w-3xl mx-auto mb-1 mt-4">
-            <div className={cn("flex bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 transition-all hover:shadow-xl p-1", messages.length > 0 ? "items-end" : "items-center")}>
+            <div className="flex items-center bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 transition-all hover:shadow-xl p-1">
               <Textarea
                 value={input}
                 onChange={(event) => {
