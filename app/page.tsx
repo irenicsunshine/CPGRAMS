@@ -7,7 +7,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-2xl mx-auto space-y-6">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold tracking-tight text-[#1d4e8f]">
+            <h2 className="text-3xl font-bold tracking-tight text-primary">
               Welcome to the Grievance Handling System
             </h2>
             <p className="mt-4 text-lg text-gray-700">
@@ -17,10 +17,10 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link href="/grievance">
-              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
-                <h3 className="font-semibold text-[#1d4e8f]">
+              <div className="p-6 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
+                <h3 className="font-semibold text-primary">
                   Lodge New Grievance
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
@@ -30,8 +30,8 @@ export default function Home() {
               </div>
             </Link>
             <Link href="/track-grievance">
-              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
-                <h3 className="font-semibold text-[#1d4e8f]">
+              <div className="p-6 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
+                <h3 className="font-semibold text-primary">
                   Track Grievance
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
@@ -39,14 +39,6 @@ export default function Home() {
                 </p>
               </div>
             </Link>
-            <div className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white">
-              <h3 className="font-semibold text-[#1d4e8f]">
-                Department Directory
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Find contact information for various government departments
-              </p>
-            </div>
           </div>
         </div>
       </main>
