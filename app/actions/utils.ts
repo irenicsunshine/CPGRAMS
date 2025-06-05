@@ -55,6 +55,19 @@ export async function processToolCalls<
       const { toolInvocation } = part;
       const toolName = toolInvocation.toolName;
 
+      // Special handling for document upload and additional support tools
+      if (toolName === "documentUpload" && toolInvocation.state === "call") {
+        // For document upload, we just return the part as is
+        // The actual upload will be handled by the UI component
+        return part;
+      }
+      
+      if (toolName === "additionalSupport" && toolInvocation.state === "call") {
+        // For additional support, we just return the part as is
+        // The actual support will be handled by the UI component or backend
+        return part;
+      }
+
       // Only continue if we have an execute function for the tool (meaning it requires confirmation) and it's in a 'result' state
       if (!(toolName in executeFunctions) || toolInvocation.state !== "result")
         return part;
@@ -81,6 +94,12 @@ export async function processToolCalls<
         }
       } else if (toolInvocation.result === APPROVAL.NO) {
         result = "Error: User denied access to tool execution";
+      } else if (toolName === "documentUpload") {
+        // Handle document upload result from UI
+        result = toolInvocation.result;
+      } else if (toolName === "additionalSupport") {
+        // Handle additional support result
+        result = toolInvocation.result || "A representative from a support group may reach out to you.";
       } else {
         // For any unhandled responses, return the original part.
         return part;

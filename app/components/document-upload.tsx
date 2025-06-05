@@ -1,105 +1,184 @@
 "use client";
+import type React from "react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, FileText, CheckCircle2 } from "lucide-react";
-import { uploadDocument } from "@/app/actions/document-upload";
+import { Upload, X, FileText, Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UploadedFile {
+  originalName: string;
   fileName: string;
   fileUrl: string;
   fileSize: number;
+  fileType: string;
+  uploadedAt: string;
 }
 
 interface DocumentUploadProps {
-  message: string;
   toolCallId: string;
-  onComplete: (toolCallId: string, result: unknown) => void;
+  onComplete: (files: UploadedFile[], toolCallId: string) => void;
   onCancel: () => void;
 }
 
-export const DocumentUpload: React.FC<DocumentUploadProps> = ({
-  message,
+const CLOUDFLARE_API_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_API_URL;
+const CLOUDFLARE_CDN_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_CDN_URL;
+
+export function DocumentUpload({
   toolCallId,
   onComplete,
   onCancel,
-}) => {
+}: DocumentUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFiles(Array.from(e.target.files));
+      const newFiles = Array.from(e.target.files);
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      setError(null);
     }
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    
-    setIsUploading(true);
-    try {
-      const result = await uploadDocument(files);
-      if (result.success && result.uploadedFiles) {
-        setUploadedFiles(result.uploadedFiles);
-        setFiles([]);
-      }
-    } catch (error) {
-      console.error("Error uploading documents:", error);
-    } finally {
-      setIsUploading(false);
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      setError(null);
     }
   };
-  
-  const handleComplete = () => {
-    onComplete(toolCallId, {
-      success: true,
-      message: `Successfully uploaded ${uploadedFiles.length} document(s)`,
-      uploadedFiles: uploadedFiles
-    });
-  };
 
-  const handleBrowseClick = () => {
-    fileInputRef.current?.click();
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   const removeFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index));
+    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (files.length === 0) {
+      setError("Please select at least one file to upload");
+      return;
+    }
+
+    if (!CLOUDFLARE_API_URL || !CLOUDFLARE_CDN_URL) {
+      setError("Upload configuration is missing");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedFiles: UploadedFile[] = [];
+
+      for (const file of files) {
+        // Generate unique filename to avoid conflicts
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const fileExtension = file.name.split(".").pop();
+        const fileName = `${timestamp}-${randomString}.${fileExtension}`;
+
+        // Convert file to array buffer
+        const arrayBuffer = await file.arrayBuffer();
+
+        // Upload to Cloudflare R2
+        const response = await fetch(`${CLOUDFLARE_API_URL}${fileName}`, {
+          method: "PUT",
+          body: arrayBuffer,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to upload ${file.name}: ${response.statusText}`
+          );
+        }
+
+        // Add to uploaded files list
+        uploadedFiles.push({
+          originalName: file.name,
+          fileName: fileName,
+          fileUrl: `${CLOUDFLARE_CDN_URL}/${fileName}`,
+          fileSize: file.size,
+          fileType: file.type,
+          uploadedAt: new Date().toISOString(),
+        });
+      }
+
+      // Pass the uploaded file information back to the parent
+      onComplete(uploadedFiles, toolCallId);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to upload documents. Please try again."
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <div className="bg-white border border-purple-200 rounded-lg p-4 my-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-purple-700 mb-2">Document Upload</h3>
-        <p className="text-gray-700">{message}</p>
-      </div>
+    <Card className="w-full max-w-2xl mx-auto my-4">
+      <CardHeader>
+        <CardTitle className="text-lg font-medium">Upload Documents</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      <div className="space-y-4">
-        {/* File input (hidden) */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          multiple
-        />
+        <div
+          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            multiple
+          />
+          <Upload className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm font-medium">
+            Click to browse or drag and drop files here
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Supported formats: PDF, JPG, PNG, DOC, DOCX (Max 10MB)
+          </p>
+        </div>
 
-        {/* Selected files list */}
         {files.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">Selected files:</p>
-            <div className="space-y-2">
+          <div className="mt-4">
+            <h4 className="text-sm font-medium mb-2">Selected Files:</h4>
+            <ul className="space-y-2">
               {files.map((file, index) => (
-                <div
+                <li
                   key={index}
-                  className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200"
+                  className="flex items-center justify-between bg-gray-50 p-2 rounded-md"
                 >
-                  <div className="flex items-center space-x-2">
-                    <FileText size={16} className="text-purple-600" />
+                  <div className="flex items-center">
+                    <FileText className="h-4 w-4 text-gray-500 mr-2" />
                     <span className="text-sm truncate max-w-[200px]">
                       {file.name}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 ml-2">
                       ({(file.size / 1024).toFixed(1)} KB)
                     </span>
                   </div>
@@ -107,93 +186,30 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => removeFile(index)}
-                    className="h-6 w-6 p-0"
                   >
-                    <X size={14} />
+                    <X className="h-4 w-4" />
                   </Button>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
-
-        {/* Uploaded files list */}
-        {uploadedFiles.length > 0 && (
-          <div className="space-y-2 mt-4 border-t pt-4 border-purple-100">
-            <p className="text-sm font-medium text-green-700 flex items-center">
-              <CheckCircle2 size={16} className="mr-1" />
-              Uploaded files:
-            </p>
-            <div className="space-y-2">
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-100"
-                >
-                  <div className="flex items-center space-x-2">
-                    <FileText size={16} className="text-green-600" />
-                    <span className="text-sm truncate max-w-[200px]">
-                      {file.fileName}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({(file.fileSize / 1024).toFixed(1)} KB)
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex space-x-3">
-          {uploadedFiles.length === 0 ? (
+      </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onCancel} disabled={uploading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={uploading}>
+          {uploading ? (
             <>
-              <Button
-                variant="outline"
-                onClick={handleBrowseClick}
-                className="border-purple-200 hover:bg-purple-50 text-purple-700"
-                disabled={isUploading}
-              >
-                <Upload size={16} className="mr-2" />
-                Browse Files
-              </Button>
-              <Button
-                onClick={handleUpload}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-                disabled={files.length === 0 || isUploading}
-              >
-                {isUploading ? "Uploading..." : "Upload"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={onCancel}
-                className="text-gray-500"
-                disabled={isUploading}
-              >
-                Cancel
-              </Button>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Uploading...
             </>
           ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleBrowseClick}
-                className="border-purple-200 hover:bg-purple-50 text-purple-700"
-              >
-                <Upload size={16} className="mr-2" />
-                Upload More
-              </Button>
-              <Button
-                onClick={handleComplete}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Done
-              </Button>
-            </>
+            "Upload Documents"
           )}
-        </div>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
-};
+}

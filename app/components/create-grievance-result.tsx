@@ -1,14 +1,6 @@
 import React, { useRef } from "react";
-import { Download } from "lucide-react";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface CreateGrievanceResultProps {
   id?: string;
@@ -31,9 +23,9 @@ export const CreateGrievanceResult: React.FC<CreateGrievanceResultProps> = ({
 }) => {
   const grievanceRef = useRef<HTMLDivElement>(null);
 
-  const generatePDF = () => {
-    console.log("generatePDF");
-  };
+  // const generatePDF = () => {
+  //   console.log("generatePDF");
+  // };
 
   const getPriorityVariant = (priority?: string) => {
     switch (priority?.toLowerCase()) {
@@ -103,12 +95,12 @@ export const CreateGrievanceResult: React.FC<CreateGrievanceResultProps> = ({
       </div>
 
       {/* Footer with Download Button */}
-      <CardFooter className="border-t justify-end">
+      {/* <CardFooter className="border-t justify-end">
         <Button onClick={generatePDF}>
           <Download size={18} />
           Download PDF
         </Button>
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 };

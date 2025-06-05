@@ -5,13 +5,12 @@ import { ClassifyGrievanceResult } from "../components/classify-grievance-result
 import { Send, User, Bot, Loader2, FileCheck, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { APPROVAL, getToolsRequiringConfirmation } from "../actions/utils";
-import { tools } from "../actions/tools";
+import { APPROVAL } from "../actions/utils";
+import { DocumentUpload } from "../components/document-upload";
 
 export default function Page() {
   const { messages, input, setInput, handleSubmit, isLoading, addToolResult } =
     useChat();
-  const toolsRequiringConfirmation = getToolsRequiringConfirmation(tools);
 
   return (
     <main className="flex flex-col min-h-[calc(85vh)] max-w-4xl mx-auto">
@@ -78,7 +77,7 @@ export default function Page() {
                             part.toolInvocation;
 
                           if (
-                            toolsRequiringConfirmation.includes(toolName) &&
+                            toolName === "confirmGrievance" &&
                             state === "call"
                           ) {
                             console.log("toolCallId", toolCallId);
@@ -147,6 +146,84 @@ export default function Page() {
                                     }
                                   >
                                     No, Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (
+                            toolName === "documentUpload" &&
+                            state == "call"
+                          ) {
+                            return (
+                              <div key={toolCallId}>
+                                <p className="mb-4 text-gray-600">
+                                  {part.toolInvocation.args.message}
+                                </p>
+                                <DocumentUpload
+                                  toolCallId={toolCallId}
+                                  onComplete={(files, toolCallId) => {
+                                    console.log('Document upload completed:', { files, toolCallId });
+                                    addToolResult({
+                                      toolCallId,
+                                      result: files,
+                                    });
+                                  }}
+                                  onCancel={() =>
+                                    addToolResult({
+                                      toolCallId,
+                                      result: "No documents available.",
+                                    })
+                                  }
+                                />
+                              </div>
+                            );
+                          }
+
+                          if (
+                            toolName === "additionalSupport" &&
+                            state == "call"
+                          ) {
+                            return (
+                              <div
+                                key={toolCallId}
+                                className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
+                              >
+                                <div className="mb-3">
+                                  <h4 className="text-lg font-medium text-gray-800 mb-2">
+                                    Additional Support
+                                  </h4>
+                                  <p className="text-gray-600 mb-2">
+                                    There are support groups working in this
+                                    area, would you like additional support?
+                                  </p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                  <Button
+                                    className="text-white px-4 py-2 rounded-md flex items-center gap-2"
+                                    onClick={() =>
+                                      addToolResult({
+                                        toolCallId,
+                                        result: "Connect me to a support group",
+                                      })
+                                    }
+                                  >
+                                    Connect me to a support group
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
+                                    onClick={() =>
+                                      addToolResult({
+                                        toolCallId,
+                                        result:
+                                          "No, I dont want additional support.",
+                                      })
+                                    }
+                                  >
+                                    No, I dont want additional support.
                                   </Button>
                                 </div>
                               </div>

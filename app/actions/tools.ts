@@ -124,9 +124,27 @@ const confirmGrievance = tool({
   parameters: z.object({}),
 });
 
+const documentUpload = tool({
+  description:
+    "Upload documents for the grievance. This tool should be used to upload documents for the grievance.",
+  parameters: z.object({
+    message: z.string().describe("Relevant documents for the grievance"),
+  }),
+});
+
+const additionalSupport = tool({
+  description:
+    "Provide additional support to the user. This tool should be used to provide additional support to the user.",
+  parameters: z.object({
+    message: z.string().describe("Additional support for the grievance"),
+  }),
+});
+
 export const tools = {
   classifyGrievance,
   createGrievance,
   performMySchemeSearch,
   confirmGrievance,
+  documentUpload,
+  additionalSupport,
 };
