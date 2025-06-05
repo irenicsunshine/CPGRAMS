@@ -95,31 +95,3 @@
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out forwards;
 }
-
-/* Global link styles */
-a {
-  color: #2563eb; /* A standard blue, similar to Tailwind's blue-600 */
-  text-decoration: none; /* No underline by default */
-}
-
-a:hover {
-  text-decoration: underline; /* Underline on hover */
-}
-
-/* Global list styles */
-ul, ol {
-  padding-left: 20px; /* Indentation for lists */
-  margin-bottom: 0.5rem; /* Space below lists */
-}
-
-ul {
-  list-style-type: disc; /* Standard disc bullets for unordered lists */
-}
-
-ol {
-  list-style-type: decimal; /* Standard numbers for ordered lists */
-}
-
-li {
-  margin-bottom: 0.25rem; /* Space below each list item */
-}
