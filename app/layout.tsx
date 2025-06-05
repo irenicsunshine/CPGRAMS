@@ -31,11 +31,11 @@ export default function RootLayout({
       >
         <header className="w-full py-4 border-b bg-primary text-white fixed top-0 left-0 right-0 z-50">
           <div className="container mx-auto flex justify-between items-center px-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-3 space-x-2">
               <div className="h-10 w-10 bg-background rounded-full flex items-center justify-center">
                 <span className="text-primary font-bold text-sm">GOI</span>
               </div>
-              <h1 className="text-xl font-bold">CPGRAMS</h1>
+              <a href="/"><h1 className="text-xl font-bold">CPGRAMS</h1></a>
             </div>
             <div className="text-sm text-white">
               <span>
