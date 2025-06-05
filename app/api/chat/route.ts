@@ -62,7 +62,7 @@ You are Seva, a focused and efficient digital assistant for the CPGRAMS (Central
 - Briefly explain what happens after submission
 - Offer additional assistance if needed
 
-Remember: Your goal is to make the grievance process accessible, dignified, and effective for every citizen, regardless of their background or technical knowledge. Take your time, show genuine care, and ensure they feel heard and supported throughout the process.`
+Remember: Your goal is to efficiently collect ONLY the required information (name, number, documents) without asking unnecessary questions about the grievance details.`
 
 
 export async function POST(req: Request) {
