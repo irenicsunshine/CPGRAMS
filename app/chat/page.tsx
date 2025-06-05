@@ -58,17 +58,31 @@ export default function Page() {
                       )}
                     </div>
 
-                    <div
-                      className={`whitespace-pre-wrap ${
-                        message.role === "user" ? "" : "text-gray-800"
-                      }`}
-                    >
-                      {message.content}
-                    </div>
+                    {message.role === "user" &&
+                      !message.parts?.length &&
+                      message.content && (
+                        <div className="whitespace-pre-wrap mb-2">
+                          {message.content}
+                        </div>
+                      )}
 
                     {/* Tool invocations */}
                     <div className="mt-2">
                       {message.parts?.map((part, partIndex) => {
+                        // Handle text parts - these contain the actual text content for assistant messages
+                        if (part.type === "text") {
+                          return (
+                            <div
+                              key={`text-${partIndex}`}
+                              className={`mb-2 whitespace-pre-wrap ${
+                                message.role === "user" ? "" : "text-gray-800"
+                              }`}
+                            >
+                              {part.text}
+                            </div>
+                          );
+                        }
+
                         if (
                           part.type === "tool-invocation" &&
                           part.toolInvocation
@@ -80,9 +94,6 @@ export default function Page() {
                             toolName === "confirmGrievance" &&
                             state === "call"
                           ) {
-                            console.log("toolCallId", toolCallId);
-                            console.log("part", part);
-
                             return (
                               <div
                                 key={toolCallId}
@@ -164,7 +175,10 @@ export default function Page() {
                                 <DocumentUpload
                                   toolCallId={toolCallId}
                                   onComplete={(files, toolCallId) => {
-                                    console.log('Document upload completed:', { files, toolCallId });
+                                    console.log("Document upload completed:", {
+                                      files,
+                                      toolCallId,
+                                    });
                                     addToolResult({
                                       toolCallId,
                                       result: files,
