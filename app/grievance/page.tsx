@@ -429,7 +429,7 @@ export default function GrievancePage() {
                       return part.text?.trim() ? (
                         <div 
                           key={partIndex + '-container'}
-                          className="text-default max-w-none text-default whitespace-pre-wrap mb-2"
+                          className="prose text-default max-w-none"
                         >
                           <ReactMarkdown
                             children={part.text}
