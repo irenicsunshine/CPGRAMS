@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   CheckSquare,
 } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface GrievanceTrackingProps {
   grievance: Grievance;
@@ -24,7 +25,7 @@ interface TrackingStep {
   description: string;
   date: string;
   status: StepStatus;
-  icon: any;
+  icon: LucideIcon;
 }
 
 // Helper function to determine the estimated resolution date based on priority
@@ -64,7 +65,7 @@ const getCurrentStep = (status: string | undefined): number => {
 export function GrievanceTracking({ grievance }: GrievanceTrackingProps) {
   const estimatedResolutionDate = getEstimatedResolutionDate(grievance);
   const currentStep = getCurrentStep(grievance.status);
-  
+
   // Debug logs
   console.log("Current step:", currentStep);
   console.log("Grievance status:", grievance.status);
@@ -195,7 +196,10 @@ export function GrievanceTracking({ grievance }: GrievanceTrackingProps) {
   ];
 
   // Debug log for steps
-  console.log("Steps with statuses:", steps.map(step => ({ id: step.id, name: step.name, status: step.status })));
+  console.log(
+    "Steps with statuses:",
+    steps.map((step) => ({ id: step.id, name: step.name, status: step.status }))
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

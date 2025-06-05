@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Grievance, GrievanceResponse } from "@/utils/types";
+import { GrievanceResponse } from "@/utils/types";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

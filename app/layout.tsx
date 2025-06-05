@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,9 @@ export default function RootLayout({
               <div className="h-10 w-10 bg-background rounded-full flex items-center justify-center">
                 <span className="text-primary font-bold text-sm">GOI</span>
               </div>
-              <a href="/"><h1 className="text-xl font-bold">CPGRAMS</h1></a>
+              <Link href="/">
+                <h1 className="text-xl font-bold">CPGRAMS</h1>
+              </Link>
             </div>
             <div className="text-sm text-white">
               <span>

@@ -427,13 +427,11 @@ export default function GrievancePage() {
                     if (part.type === "text") {
                       // Only render text parts if they have content
                       return part.text?.trim() ? (
-                        <div 
-                          key={partIndex + '-container'}
+                        <div
+                          key={partIndex + "-container"}
                           className="prose text-default max-w-none"
                         >
-                          <ReactMarkdown
-                            children={part.text}
-                          />
+                          <ReactMarkdown>{part.text}</ReactMarkdown>
                         </div>
                       ) : null;
                     } else if (part.type === "tool-invocation") {

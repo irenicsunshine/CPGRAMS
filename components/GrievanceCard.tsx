@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Grievance } from "@/utils/types";
 import { PackageCheck } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 
 interface GrievanceCardProps {
@@ -55,8 +54,8 @@ export function GrievanceCard({ grievance }: GrievanceCardProps) {
 
         {/* Right side (10%) with View more button */}
         <div className="w-[10%] flex items-center justify-center">
-          <Link 
-            href={`/view-grievance?id=${grievance.id}`} 
+          <Link
+            href={`/view-grievance?id=${grievance.id}`}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium flex flex-col items-center justify-center"
           >
             <span>View</span>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Grievance } from "@/utils/types";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import Link from "next/link";
 import { GrievanceDetails } from "@/components/GrievanceDetails";
 import { GrievanceTracking } from "@/components/GrievanceTracking";
 
-export default function ViewGrievancePage() {
+function GrievancePageContent() {
   const searchParams = useSearchParams();
   const grievanceId = searchParams.get("id");
 
@@ -132,5 +132,15 @@ export default function ViewGrievancePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ViewGrievancePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>}>
+      <GrievancePageContent />
+    </Suspense>
   );
 }

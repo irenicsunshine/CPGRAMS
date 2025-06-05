@@ -15,14 +15,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import UserIcon from "../components/Icons";
 
 export default function Page() {
-  const {
-    messages,
-    input,
-    setInput,
-    append,
-    isLoading,
-    addToolResult,
-  } = useChat();
+  const { messages, input, setInput, append, isLoading, addToolResult } =
+    useChat();
 
   // ElevenLabs Speech-to-Text states
   const [isRecording, setIsRecording] = useState(false);
@@ -165,277 +159,266 @@ export default function Page() {
           ) : (
             <>
               {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex items-start gap-3 my-6 ${
+                    message.role === "user"
+                      ? "justify-end ml-auto"
+                      : "justify-start mr-auto"
+                  } max-w-[90%]`}
+                >
+                  {message.role !== "user" && (
+                    <Avatar className="w-8 h-8 border">
+                      <AvatarFallback>S</AvatarFallback>
+                    </Avatar>
+                  )}
                   <div
-                    key={message.id} 
-                    className={`flex items-start gap-3 my-6 ${
-                      message.role === "user" ? "justify-end ml-auto" : "justify-start mr-auto"
-                    } max-w-[90%]`}
-                  >
-                    {message.role !== "user" && (
-                      <Avatar className="w-8 h-8 border">
-                        <AvatarFallback>S</AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div
-                      className={`rounded-lg border px-6 text-default ${
-                        message.role === "user"
-                          ? `bg-user text-right ${
+                    className={`rounded-lg border px-6 text-default ${
+                      message.role === "user"
+                        ? `bg-user text-right ${
                             message.content.length < 50 &&
                             !message.content.includes("\n")
                               ? "w-fit py-4"
                               : "max-w-full py-6"
                           }`
-                          : "bg-assistant break-words max-w-full py-6"
-                      }`}
-                    >
-                      {message.role === "user" &&
-                        !message.parts?.length &&
-                        message.content && (
-                          <div 
+                        : "bg-assistant break-words max-w-full py-6"
+                    }`}
+                  >
+                    {message.role === "user" &&
+                      !message.parts?.length &&
+                      message.content && (
+                        <div className="prose text-default max-w-none">
+                          <ReactMarkdown>{message.content}</ReactMarkdown>
+                        </div>
+                      )}
+                    {/* Tool invocations */}
+
+                    {message.parts?.map((part, partIndex) => {
+                      if (part.type === "text") {
+                        return (
+                          <div
+                            key={partIndex + "-container"}
                             className="prose text-default max-w-none"
                           >
-                            <ReactMarkdown
-                              children={message.content}
-                            />
+                            <ReactMarkdown>{part.text}</ReactMarkdown>
                           </div>
-                        )}
-                      {/* Tool invocations */}
-                      
-                      {message.parts?.map((part, partIndex) => {
-                        if (part.type === "text") {
+                        );
+                      }
+
+                      if (
+                        part.type === "tool-invocation" &&
+                        part.toolInvocation
+                      ) {
+                        const { toolName, state, toolCallId } =
+                          part.toolInvocation;
+
+                        if (
+                          toolName === "confirmGrievance" &&
+                          state === "call"
+                        ) {
                           return (
-                            <div 
-                              key={partIndex + '-container'}
-                              className="prose text-default max-w-none"
+                            <div
+                              key={toolCallId}
+                              className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
                             >
-                              <ReactMarkdown
-                                children={part.text}
+                              <div className="mb-3">
+                                <h4 className="text-lg font-medium text-gray-800 mb-2">
+                                  Confirm Grievance Filing
+                                </h4>
+                                <p className="text-gray-600 mb-2">
+                                  Are you ready to file this grievance?
+                                </p>
+
+                                {part.toolInvocation.args.priority && (
+                                  <div className="mb-2">
+                                    <span className="font-medium">
+                                      Priority:
+                                    </span>{" "}
+                                    <span
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        part.toolInvocation.args.priority ===
+                                        "high"
+                                          ? "bg-red-100 text-red-800"
+                                          : part.toolInvocation.args
+                                              .priority === "medium"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : "bg-green-100 text-green-800"
+                                      }`}
+                                    >
+                                      {part.toolInvocation.args.priority
+                                        .charAt(0)
+                                        .toUpperCase() +
+                                        part.toolInvocation.args.priority.slice(
+                                          1
+                                        )}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex gap-3">
+                                <Button
+                                  className="text-white px-4 py-2 rounded-md flex items-center gap-2"
+                                  onClick={() =>
+                                    addToolResult({
+                                      toolCallId,
+                                      result: APPROVAL.YES,
+                                    })
+                                  }
+                                >
+                                  Yes, File Grievance
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
+                                  onClick={() =>
+                                    addToolResult({
+                                      toolCallId,
+                                      result: APPROVAL.NO,
+                                    })
+                                  }
+                                >
+                                  No, Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (toolName === "documentUpload" && state == "call") {
+                          return (
+                            <div key={toolCallId}>
+                              <p className="mb-4 text-gray-600">
+                                {part.toolInvocation.args.message}
+                              </p>
+                              <DocumentUpload
+                                toolCallId={toolCallId}
+                                onComplete={(files, toolCallId) => {
+                                  console.log("Document upload completed:", {
+                                    files,
+                                    toolCallId,
+                                  });
+                                  addToolResult({
+                                    toolCallId,
+                                    result: files,
+                                  });
+                                }}
+                                onCancel={() =>
+                                  addToolResult({
+                                    toolCallId,
+                                    result: "No documents available.",
+                                  })
+                                }
                               />
                             </div>
                           );
                         }
 
                         if (
-                          part.type === "tool-invocation" &&
-                          part.toolInvocation
+                          toolName === "additionalSupport" &&
+                          state == "call"
                         ) {
-                          const { toolName, state, toolCallId } =
-                            part.toolInvocation;
-
-                          if (
-                            toolName === "confirmGrievance" &&
-                            state === "call"
-                          ) {
-                            return (
-                              <div
-                                key={toolCallId}
-                                className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
-                              >
-                                <div className="mb-3">
-                                  <h4 className="text-lg font-medium text-gray-800 mb-2">
-                                    Confirm Grievance Filing
-                                  </h4>
-                                  <p className="text-gray-600 mb-2">
-                                    Are you ready to file this grievance?
-                                  </p>
-
-                                  {part.toolInvocation.args.priority && (
-                                    <div className="mb-2">
-                                      <span className="font-medium">
-                                        Priority:
-                                      </span>{" "}
-                                      <span
-                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                          part.toolInvocation.args
-                                            .priority === "high"
-                                            ? "bg-red-100 text-red-800"
-                                            : part.toolInvocation.args
-                                                .priority === "medium"
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : "bg-green-100 text-green-800"
-                                        }`}
-                                      >
-                                        {part.toolInvocation.args.priority
-                                          .charAt(0)
-                                          .toUpperCase() +
-                                          part.toolInvocation.args.priority.slice(
-                                            1
-                                          )}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex gap-3">
-                                  <Button
-                                    className="text-white px-4 py-2 rounded-md flex items-center gap-2"
-                                    onClick={() =>
-                                      addToolResult({
-                                        toolCallId,
-                                        result: APPROVAL.YES,
-                                      })
-                                    }
-                                  >
-                                    Yes, File Grievance
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
-                                    onClick={() =>
-                                      addToolResult({
-                                        toolCallId,
-                                        result: APPROVAL.NO,
-                                      })
-                                    }
-                                  >
-                                    No, Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          if (
-                            toolName === "documentUpload" &&
-                            state == "call"
-                          ) {
-                            return (
-                              <div key={toolCallId}>
-                                <p className="mb-4 text-gray-600">
-                                  {part.toolInvocation.args.message}
+                          return (
+                            <div
+                              key={toolCallId}
+                              className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
+                            >
+                              <div className="mb-3">
+                                <h4 className="text-lg font-medium text-gray-800 mb-2">
+                                  Additional Support
+                                </h4>
+                                <p className="text-gray-600 mb-2">
+                                  There are support groups working in this area,
+                                  would you like additional support?
                                 </p>
-                                <DocumentUpload
-                                  toolCallId={toolCallId}
-                                  onComplete={(files, toolCallId) => {
-                                    console.log(
-                                      "Document upload completed:",
-                                      {
-                                        files,
-                                        toolCallId,
-                                      }
-                                    );
+                              </div>
+
+                              <div className="flex gap-3">
+                                <Button
+                                  className="text-white px-4 py-2 rounded-md flex items-center gap-2"
+                                  onClick={() =>
                                     addToolResult({
                                       toolCallId,
-                                      result: files,
-                                    });
-                                  }}
-                                  onCancel={() =>
-                                    addToolResult({
-                                      toolCallId,
-                                      result: "No documents available.",
+                                      result: "Connect me to a support group",
                                     })
                                   }
-                                />
+                                >
+                                  Connect me to a support group
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
+                                  onClick={() =>
+                                    addToolResult({
+                                      toolCallId,
+                                      result:
+                                        "No, I dont want additional support.",
+                                    })
+                                  }
+                                >
+                                  No, I dont want additional support.
+                                </Button>
                               </div>
-                            );
-                          }
-
-                          if (
-                            toolName === "additionalSupport" &&
-                            state == "call"
-                          ) {
-                            return (
-                              <div
-                                key={toolCallId}
-                                className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm"
-                              >
-                                <div className="mb-3">
-                                  <h4 className="text-lg font-medium text-gray-800 mb-2">
-                                    Additional Support
-                                  </h4>
-                                  <p className="text-gray-600 mb-2">
-                                    There are support groups working in this
-                                    area, would you like additional support?
-                                  </p>
-                                </div>
-
-                                <div className="flex gap-3">
-                                  <Button
-                                    className="text-white px-4 py-2 rounded-md flex items-center gap-2"
-                                    onClick={() =>
-                                      addToolResult({
-                                        toolCallId,
-                                        result:
-                                          "Connect me to a support group",
-                                      })
-                                    }
-                                  >
-                                    Connect me to a support group
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md flex items-center gap-2"
-                                    onClick={() =>
-                                      addToolResult({
-                                        toolCallId,
-                                        result:
-                                          "No, I dont want additional support.",
-                                      })
-                                    }
-                                  >
-                                    No, I dont want additional support.
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          if (state === "result") {
-                            if (toolName === "createGrievance") {
-                              const { result } = part.toolInvocation;
-                              return (
-                                <div key={partIndex} className="mt-3">
-                                  <CreateGrievanceResult {...result} />
-                                </div>
-                              );
-                            } else if (toolName === "classifyGrievance") {
-                              const { result } = part.toolInvocation;
-                              return (
-                                <ClassifyGrievanceResult
-                                  key={partIndex}
-                                  categories={result?.categories || []}
-                                />
-                              );
-                            }
-                          } else {
-                            return (
-                              <div key={partIndex}>
-                                {toolName === "createGrievance" ? (
-                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 my-2">
-                                    <div className="flex items-center">
-                                      <Loader2 className="animate-spin h-5 w-5 text-green-600 mr-2" />
-                                      <span>Creating grievance...</span>
-                                    </div>
-                                  </div>
-                                ) : toolName === "classifyGrievance" ? (
-                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 my-2">
-                                    <div className="flex items-center">
-                                      <Tag className="animate-pulse h-5 w-5 text-blue-600 mr-2" />
-                                      <span>Classifying grievance...</span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 my-2">
-                                    <div className="flex items-center">
-                                      <Loader2 className="animate-spin h-5 w-5 text-gray-600 mr-2" />
-                                      <span>Processing...</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
+                            </div>
+                          );
                         }
-                        return null;
-                      })}
+
+                        if (state === "result") {
+                          if (toolName === "createGrievance") {
+                            const { result } = part.toolInvocation;
+                            return (
+                              <div key={partIndex} className="mt-3">
+                                <CreateGrievanceResult {...result} />
+                              </div>
+                            );
+                          } else if (toolName === "classifyGrievance") {
+                            const { result } = part.toolInvocation;
+                            return (
+                              <ClassifyGrievanceResult
+                                key={partIndex}
+                                categories={result?.categories || []}
+                              />
+                            );
+                          }
+                        } else {
+                          return (
+                            <div key={partIndex}>
+                              {toolName === "createGrievance" ? (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 my-2">
+                                  <div className="flex items-center">
+                                    <Loader2 className="animate-spin h-5 w-5 text-green-600 mr-2" />
+                                    <span>Creating grievance...</span>
+                                  </div>
+                                </div>
+                              ) : toolName === "classifyGrievance" ? (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 my-2">
+                                  <div className="flex items-center">
+                                    <Tag className="animate-pulse h-5 w-5 text-blue-600 mr-2" />
+                                    <span>Classifying grievance...</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 my-2">
+                                  <div className="flex items-center">
+                                    <Loader2 className="animate-spin h-5 w-5 text-gray-600 mr-2" />
+                                    <span>Processing...</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                      }
+                      return null;
+                    })}
                   </div>
                   {message.role === "user" && (
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-primary">
-                          <UserIcon className="w-6 h-6 fill-white" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="bg-primary">
+                        <UserIcon className="w-6 h-6 fill-white" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
               ))}
             </>
