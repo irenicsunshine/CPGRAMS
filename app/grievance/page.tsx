@@ -1,11 +1,13 @@
 "use client";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { classifyGrievance, createGrievance } from "@/app/actions/grievance";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Mic, Square } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import UserIcon from "../components/Icons";
 import { performMySchemeSearch } from "@/app/actions/myscheme-search";
 
 interface ToolInvocation {
@@ -21,12 +23,12 @@ interface ToolInvocation {
 
 interface MessagePart {
   type:
-  | "text"
-  | "tool-invocation"
-  | "reasoning"
-  | "source"
-  | "file"
-  | "step-start";
+    | "text"
+    | "tool-invocation"
+    | "reasoning"
+    | "source"
+    | "file"
+    | "step-start";
   text?: string;
   toolInvocation?: ToolInvocation;
   // Additional fields for other part types can be added as needed
@@ -269,39 +271,41 @@ export default function GrievancePage() {
     }
   }, [chatMessages]);
 
-  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.webm');
+  const transcribeAudio = useCallback(
+    async (audioBlob: Blob) => {
+      try {
+        const formData = new FormData();
+        formData.append("file", audioBlob, "recording.webm");
 
-      const response = await fetch('/api/speech-to-text', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch("/api/speech-to-text", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Transcription failed');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Transcription failed");
+        }
+
+        const result = await response.json();
+
+        if (result.text && result.text.trim()) {
+          // Append transcribed text to existing input
+          const newText = input ? `${input} ${result.text}` : result.text;
+          setInput(newText);
+        } else {
+          // Consider how to inform the user about no speech detected if necessary
+          console.warn("No speech detected. Please try again.");
+        }
+      } catch (error) {
+        console.error("Transcription error:", error);
+        // Consider how to inform the user about transcription failure if necessary
+      } finally {
+        setIsProcessing(false);
       }
-
-      const result = await response.json();
-
-      if (result.text && result.text.trim()) {
-        // Append transcribed text to existing input
-        const newText = input ? `${input} ${result.text}` : result.text;
-        setInput(newText);
-      } else {
-        // Consider how to inform the user about no speech detected if necessary
-        console.warn('No speech detected. Please try again.');
-      }
-
-    } catch (error) {
-      console.error('Transcription error:', error);
-      // Consider how to inform the user about transcription failure if necessary
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [input, setInput]);
+    },
+    [input, setInput]
+  );
 
   // Start recording audio
   const startRecording = useCallback(async () => {
@@ -314,11 +318,11 @@ export default function GrievancePage() {
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: 44100,
-        }
+        },
       });
 
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: "audio/webm;codecs=opus",
       });
 
       audioChunksRef.current = [];
@@ -331,11 +335,11 @@ export default function GrievancePage() {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: 'audio/webm;codecs=opus'
+          type: "audio/webm;codecs=opus",
         });
 
         // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         await transcribeAudio(audioBlob);
       };
 
@@ -343,9 +347,8 @@ export default function GrievancePage() {
       mediaRecorder.start(1000); // Collect data every second
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
-
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error("Error starting recording:", error);
       // Consider displaying this error to the user in a different way if needed
     }
   }, [transcribeAudio, isProcessing, isRecording]);
@@ -367,110 +370,154 @@ export default function GrievancePage() {
   };
 
   return (
-    <div className="flex flex-col bg-gray-50 min-h-[calc(85vh)]">
+    <div
+      className={cn("flex flex-col bg-gray-50 min-h-[calc(85vh)]", {
+        "justify-center": chatMessages.length === 0,
+      })}
+    >
       {/* Chat messages area */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main
+        className={cn("overflow-y-auto p-6", {
+          "flex-1": chatMessages.length > 0,
+        })}
+      >
         <div className="max-w-3xl mx-auto space-y-6">
           {chatMessages.length === 0 && (
-            <div className="text-center py-10">
-              <p className="text-gray-500">
-                Submit your grievance using the input box below
+            <div className="p-6 m-4 rounded-lg border bg-assistant">
+              <p className="text-primary font-bold">
+                Namaste! Welcome to the CPGRAMS Grievance Redress Portal.
+              </p>
+              <p className="text-primary font-bold my-2">
+                I&apos;m Seva, your digital assistant. How can I help you today?
+              </p>
+              <p className="text-primary my-2">
+                Would you like to file a grievance or do you need information
+                about a specific government scheme or service?
               </p>
             </div>
           )}
-          {parsedMessages.map((message: Message, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-lg ${message.role === "user"
-                ? "bg-blue-100 ml-auto max-w-[80%] text-right"
-                : "bg-gray-100 mr-auto max-w-[80%] break-words"
-                }`}
-            >
-              {message.parts?.map((part, partIndex) => {
-                if (part.type === "text") {
-                  // Only render text parts if they have content
-                  return part.text?.trim() ? (
-                    <p
-                      key={partIndex}
-                      className="text-gray-800 whitespace-pre-wrap mb-2"
-                    >
-                      {part.text}
-                    </p>
-                  ) : null;
-                } else if (part.type === "tool-invocation") {
-                  if (part.toolInvocation?.state === "call") {
-                    // Extract tool name if possible
-                    const toolName =
-                      part.toolInvocation.toolName !== "unknown"
-                        ? part.toolInvocation.toolName
-                        : "Tool";
+          {parsedMessages.map((message: Message, index) => {
+            const isUser = message.role === "user";
+            return (
+              <div
+                key={index}
+                className={`flex items-start gap-3 my-6 ${
+                  isUser ? "justify-end ml-auto" : "justify-start mr-auto"
+                } max-w-[90%]`}
+              >
+                {!isUser && (
+                  <Avatar className="w-8 h-8 border">
+                    <AvatarFallback>S</AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={`rounded-lg border px-6 ${
+                    isUser
+                      ? `bg-user text-right ${
+                          message.content.length < 50 &&
+                          !message.content.includes("\n")
+                            ? "w-fit py-4"
+                            : "max-w-full py-6"
+                        }`
+                      : "bg-assistant break-words max-w-full py-6"
+                  }`}
+                >
+                  {message.parts?.map((part, partIndex) => {
+                    if (part.type === "text") {
+                      // Only render text parts if they have content
+                      return part.text?.trim() ? (
+                        <p
+                          key={partIndex}
+                          className="text-default whitespace-pre-wrap"
+                        >
+                          {part.text}
+                        </p>
+                      ) : null;
+                    } else if (part.type === "tool-invocation") {
+                      if (part.toolInvocation?.state === "call") {
+                        // Extract tool name if possible
+                        const toolName =
+                          part.toolInvocation.toolName !== "unknown"
+                            ? part.toolInvocation.toolName
+                            : "Tool";
 
-                    return (
-                      <div
-                        key={partIndex}
-                        className="bg-amber-50 border border-amber-200 rounded-md p-3 my-3"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded mr-2">
-                              Tool Call
-                            </span>
-                            <span className="text-amber-700 text-xs font-semibold">
-                              {toolName}
+                        return (
+                          <div
+                            key={partIndex}
+                            className="bg-amber-50 border border-amber-200 rounded-md p-3 my-3"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                                  Tool Call
+                                </span>
+                                <span className="text-amber-700 text-xs font-semibold">
+                                  {toolName}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-default font-mono text-sm whitespace-pre-wrap">
+                              {part.text}
+                            </p>
+                          </div>
+                        );
+                      } else if (part.toolInvocation?.state === "result") {
+                        return (
+                          <div
+                            key={partIndex}
+                            className="bg-green-50 border border-green-200 rounded-md p-3 my-3"
+                          >
+                            <div className="flex items-center mb-2">
+                              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
+                                Tool Result
+                              </span>
+                            </div>
+                            <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap overflow-auto max-h-40">
+                              {part.text}
+                            </p>
+                          </div>
+                        );
+                      }
+                    } else if (part.type === "reasoning") {
+                      return (
+                        <div
+                          key={partIndex}
+                          className="bg-purple-50 border border-purple-200 rounded-md p-3 my-3"
+                        >
+                          <div className="flex items-center mb-2">
+                            <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
+                              Reasoning
                             </span>
                           </div>
+                          <p className="text-gray-700 whitespace-pre-wrap">
+                            {part.text}
+                          </p>
                         </div>
-                        <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap">
-                          {part.text}
-                        </p>
-                      </div>
-                    );
-                  } else if (part.toolInvocation?.state === "result") {
-                    return (
-                      <div
-                        key={partIndex}
-                        className="bg-green-50 border border-green-200 rounded-md p-3 my-3"
-                      >
-                        <div className="flex items-center mb-2">
-                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                            Tool Result
-                          </span>
-                        </div>
-                        <p className="text-gray-700 font-mono text-sm whitespace-pre-wrap overflow-auto max-h-40">
-                          {part.text}
-                        </p>
-                      </div>
-                    );
-                  }
-                } else if (part.type === "reasoning") {
-                  return (
-                    <div
-                      key={partIndex}
-                      className="bg-purple-50 border border-purple-200 rounded-md p-3 my-3"
-                    >
-                      <div className="flex items-center mb-2">
-                        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
-                          Reasoning
-                        </span>
-                      </div>
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {part.text}
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              })}
-              <span className="text-xs text-gray-500 mt-1 block">
-                {message.role === "user" ? "You" : "Assistant"}
-              </span>
-            </div>
-          ))}
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                {isUser && (
+                  <Avatar className="w-8 h-8 border">
+                    {/* AvatarImage removed as we are using the icon directly in fallback */}
+                    <AvatarFallback className="bg-transparent">
+                      {" "}
+                      {/* Making fallback background transparent if needed */}
+                      <UserIcon className="w-5 h-5 fill-primary" />{" "}
+                      {/* Adjusted size for icon within avatar */}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            );
+          })}
 
           {/* Show tool call in progress indicator */}
           {hasActiveToolCalls && (
-            <div className="bg-gray-100 mr-auto max-w-[80%] break-words p-4 rounded-lg">
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 my-3">
+            <div className="bg-background flex items-start gap-3 max-w-[80%] break-words rounded-lg justify-start mr-auto">
+              <div className="w-8 h-8"></div>
+              <div className="bg-assistant border border-blue-200 rounded-md p-3 my-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded mr-2">
@@ -488,9 +535,6 @@ export default function GrievancePage() {
                   </p>
                 </div>
               </div>
-              <span className="text-xs text-gray-500 mt-1 block">
-                Assistant
-              </span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -498,11 +542,10 @@ export default function GrievancePage() {
       </main>
 
       {/* Input area */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-white p-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 transition-all hover:shadow-xl p-1">
-            <Input
-              type="text"
+            <Textarea
               value={input}
               onChange={(event) => {
                 setInput(event.target.value);
@@ -513,8 +556,17 @@ export default function GrievancePage() {
                   setInput("");
                 }
               }}
-              placeholder={isRecording ? "Recording... Speak now" : isProcessing ? "Processing speech..." : "Provide your grievance here..."}
-              className="flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:border-transparent px-5 py-3"
+              placeholder={
+                isRecording
+                  ? "Recording... Speak now"
+                  : isProcessing
+                  ? "Processing speech..."
+                  : "Provide your grievance here..."
+              }
+              className={cn(
+                "flex-1 border-none shadow-none focus-visible:ring-0 focus-visible:border-transparent px-5 py-3 resize-none",
+                { "h-20": chatMessages.length === 0 }
+              )}
               disabled={isResponding}
               autoFocus
             />
@@ -524,7 +576,7 @@ export default function GrievancePage() {
                 type="button"
                 onClick={stopRecording}
                 variant="outline"
-                size='icon'
+                size="icon"
                 className="rounded-full bg-red-50 border-red-200 hover:bg-red-100"
                 title="Stop recording"
               >
@@ -536,7 +588,7 @@ export default function GrievancePage() {
                 type="button"
                 onClick={startRecording}
                 variant="outline"
-                size='icon'
+                size="icon"
                 className={cn(
                   "rounded-full",
                   isProcessing && "bg-blue-50 border-blue-200"
@@ -544,10 +596,13 @@ export default function GrievancePage() {
                 disabled={isProcessing}
                 title={getRecordingStatus()}
               >
-                <Mic className={cn(
-                  "size-4",
-                  isProcessing ? "text-blue-600" : "text-current"
-                )} strokeWidth={1.75} />
+                <Mic
+                  className={cn(
+                    "size-4",
+                    isProcessing ? "text-blue-600" : "text-current"
+                  )}
+                  strokeWidth={1.75}
+                />
                 {/* record */}
               </Button>
             )}

@@ -13,7 +13,7 @@ export default function Page() {
     useChat();
 
   return (
-    <main className="flex flex-col min-h-[calc(85vh)] max-w-4xl mx-auto">
+    <main className="bg-background flex flex-col min-h-[calc(85vh)] max-w-4xl mx-auto">
       {/* Messages container */}
       <div className="flex-grow overflow-y-auto p-4">
         {messages.length === 0 ? (
