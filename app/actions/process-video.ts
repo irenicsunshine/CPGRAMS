@@ -73,15 +73,6 @@ export async function processVideoQuery(query: string, url: string): Promise<str
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     console.log("Processing YouTube video:", videoUrl);
 
-    if (!GOOGLE_APPLICATION_CREDENTIALS || !GOOGLE_VERTEX_PROJECT_ID || !GOOGLE_VERTEX_LOCATION) {
-        let missingVars = [];
-        if (!GOOGLE_APPLICATION_CREDENTIALS) missingVars.push("GOOGLE_APPLICATION_CREDENTIALS");
-        if (!GOOGLE_VERTEX_PROJECT_ID) missingVars.push("GOOGLE_VERTEX_PROJECT_ID");
-        if (!GOOGLE_VERTEX_LOCATION) missingVars.push("GOOGLE_VERTEX_LOCATION");
-        console.error(`Missing environment variables: ${missingVars.join(', ')}. Vertex AI calls will fail.`);
-        return `Error: Server configuration error (missing: ${missingVars.join(', ')}).`;
-    }
-
     try {
         const { text: summary } = await generateText({
             model: vertex('gemini-2.0-flash-001'),
@@ -99,7 +90,7 @@ export async function processVideoQuery(query: string, url: string): Promise<str
                             data: videoUrl,
                             mimeType: 'video/mp4',
                         },
-                    ] as any,
+                    ],
                 },
             ],
         });
