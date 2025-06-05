@@ -274,11 +274,11 @@ export default function Page() {
                                   onClick={() =>
                                     addToolResult({
                                       toolCallId,
-                                      result: APPROVAL.NO,
+                                      result: "No, I would like to add more information.",
                                     })
                                   }
                                 >
-                                  No, Cancel
+                                  No, Edit
                                 </Button>
                               </div>
                             </div>
