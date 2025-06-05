@@ -199,7 +199,7 @@ export function DocumentUpload({
         <Button variant="outline" onClick={onCancel} disabled={uploading}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={uploading}>
+        <Button onClick={handleSubmit} disabled={uploading} className="bg-gray-200 hover:bg-gray-600">
           {uploading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
