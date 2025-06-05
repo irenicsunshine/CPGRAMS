@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GrievanceResponse } from "@/utils/types";
+import { Grievance, GrievanceResponse } from "@/utils/types";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
   const status = searchParams.get("status");
+  const priority = searchParams.get("priority");
 
   const userId = process.env.USER_ID;
   const apiUrl = process.env.GRM_API_URL;
@@ -36,6 +37,13 @@ export async function GET(request: NextRequest) {
     if (status && status !== "all") {
       grievances = grievances.filter(
         (g) => g.status.toLowerCase() === status.toLowerCase()
+      );
+    }
+
+    // Apply priority filter if provided
+    if (priority && priority !== "all") {
+      grievances = grievances.filter(
+        (g) => g.priority.toLowerCase() === priority.toLowerCase()
       );
     }
 
