@@ -1,196 +1,274 @@
 "use client";
 import { Grievance } from "@/utils/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
+import { Download } from "lucide-react";
 
 interface GrievanceDetailsProps {
   grievance: Grievance;
 }
 
 export function GrievanceDetails({ grievance }: GrievanceDetailsProps) {
+  const handleDownloadPDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      {/* Header with status */}
-      <div className="bg-gradient-to-r from-blue-50 to-white p-6 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Grievance Details</h1>
-          <Badge
-            className={`px-3 py-1 text-sm ${
-              grievance.status === "active"
-                ? "bg-green-100 text-green-800"
-                : grievance.status === "pending"
-                ? "bg-yellow-100 text-yellow-800"
-                : grievance.status === "resolved"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {grievance.status
-              ? grievance.status.charAt(0).toUpperCase() +
-                grievance.status.slice(1)
-              : "Unknown"}
-          </Badge>
+    <>
+      {/* Print-specific styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+
+          .grievance-details-container,
+          .grievance-details-container * {
+            visibility: visible;
+          }
+
+          .grievance-details-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          .print-only {
+            display: block !important;
+          }
+
+          .print-header {
+            margin-bottom: 2rem;
+            text-align: center;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 1rem;
+          }
+
+          .print-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+          }
+
+          /* Ensure colors print correctly */
+          .status-active {
+            background-color: #dcfce7 !important;
+            color: #166534 !important;
+          }
+
+          .status-pending {
+            background-color: #fef3c7 !important;
+            color: #92400e !important;
+          }
+
+          .status-resolved {
+            background-color: #dbeafe !important;
+            color: #1e40af !important;
+          }
+
+          .priority-high {
+            background-color: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          .priority-medium {
+            background-color: #fef3c7 !important;
+            color: #92400e !important;
+          }
+
+          .priority-low {
+            background-color: #dcfce7 !important;
+            color: #166534 !important;
+          }
+        }
+      `}</style>
+
+      <div className="grievance-details-container bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header with status and download button */}
+        <div className="bg-gradient-to-r from-blue-50 to-white p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-semibold">Grievance Details</h1>
+            <div className="flex items-center gap-3">
+              <Badge
+                className={`px-3 py-1 text-sm ${
+                  grievance.status === "active"
+                    ? "bg-green-100 text-green-800 status-active"
+                    : grievance.status === "pending"
+                    ? "bg-yellow-100 text-yellow-800 status-pending"
+                    : grievance.status === "resolved"
+                    ? "bg-blue-100 text-blue-800 status-resolved"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {grievance.status
+                  ? grievance.status.charAt(0).toUpperCase() +
+                    grievance.status.slice(1)
+                  : "Unknown"}
+              </Badge>
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 no-print hover:bg-gray-100"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Title and basic info */}
-      <div className="px-6 pt-4 pb-2">
-        <h2 className="text-lg font-bold mb-2">
-          {grievance.title ||
-            (grievance.id
-              ? `Grievance #${grievance.id.slice(-6)}`
-              : "Grievance")}
-        </h2>
-      </div>
-
-      {/* Grievance details */}
-      <div className="px-6 pb-6">
-        {/* Meta information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 p-4 rounded-md border border-gray-100">
-          <div className="flex flex-col">
-            <p className="text-sm text-gray-500 mb-1">Filed on</p>
-            <p className="font-medium">
-              {grievance.created_at
-                ? format(new Date(grievance.created_at), "d MMMM yyyy")
-                : "N/A"}
+        <div className="p-6 space-y-6">
+          {/* PDF Header - only shows when printing */}
+          <div className="hidden print-only print-header">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Grievance Filing Proof
+            </h1>
+            <p className="text-sm text-gray-600 mb-2">
+              This document serves as proof of grievance filing
+            </p>
+            <p className="text-xs text-gray-500">
+              Generated on: {format(new Date(), "d MMMM yyyy 'at' h:mm a")}
             </p>
           </div>
 
-          <div className="flex flex-col">
-            <p className="text-sm text-gray-500 mb-1">Priority</p>
-            <p className="font-medium capitalize">
+          {/* Title */}
+          <div>
+            <h2 className="text-lg font-bold">
+              {grievance.title ||
+                (grievance.id
+                  ? `Grievance #${grievance.id.slice(-6)}`
+                  : "Grievance")}
+            </h2>
+          </div>
+
+          {/* Meta information */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Filed on</p>
+              <p className="font-medium">
+                {grievance.created_at
+                  ? format(new Date(grievance.created_at), "d MMMM yyyy")
+                  : "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Priority</p>
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                   grievance.priority === "high"
-                    ? "bg-red-100 text-red-800"
+                    ? "bg-red-100 text-red-800 priority-high"
                     : grievance.priority === "medium"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-green-100 text-green-800"
+                    ? "bg-yellow-100 text-yellow-800 priority-medium"
+                    : "bg-green-100 text-green-800 priority-low"
                 }`}
               >
                 {grievance.priority || "N/A"}
               </span>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Category</p>
+              <p className="font-medium">{grievance.category || "N/A"}</p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* CPGRAMS Category */}
+          {grievance.cpgrams_category && (
+            <div>
+              <h3 className="text-base font-medium text-gray-900 mb-2">
+                CPGRAMS Category
+              </h3>
+              <p className="text-gray-700 pl-4 border-l-4 border-purple-200">
+                {grievance.cpgrams_category}
+              </p>
+            </div>
+          )}
+
+          {/* Description */}
+          <div>
+            <h3 className="text-base font-medium text-gray-900 mb-3">
+              Grievance Details
+            </h3>
+            <div className="space-y-4">
+              {grievance.description &&
+                grievance.description.split("\n\n").map((section, index) => {
+                  if (!section) return null;
+
+                  const sectionParts = section.split(":\n");
+                  const sectionTitle = sectionParts[0];
+                  const sectionContent = sectionParts[1];
+
+                  if (!sectionContent) {
+                    return (
+                      <p
+                        key={index}
+                        className="text-gray-700 whitespace-pre-wrap"
+                      >
+                        {section}
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      className="border-l-4 border-blue-200 pl-4"
+                    >
+                      <h4 className="font-medium text-gray-800 mb-2">
+                        {sectionTitle}
+                      </h4>
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {sectionContent}
+                      </p>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Last updated */}
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Last updated:{" "}
+              <span className="font-medium text-gray-900">
+                {grievance.updated_at
+                  ? format(
+                      new Date(grievance.updated_at),
+                      "d MMMM yyyy 'at' h:mm a"
+                    )
+                  : "N/A"}
+              </span>
             </p>
           </div>
 
-          <div className="flex flex-col">
-            <p className="text-sm text-gray-500 mb-1">Category</p>
-            <p className="font-medium">{grievance.category || "N/A"}</p>
-          </div>
-        </div>
-
-        <Separator className="my-6" />
-
-        {/* CPGRAMS Category */}
-        {grievance.cpgrams_category && (
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-3 flex items-center">
-              <span className="bg-purple-100 p-1 rounded mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-purple-700"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-              CPGRAMS Category
-            </h2>
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-              <p className="text-gray-700">{grievance.cpgrams_category}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Description - Parse and format structured content */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-3 flex items-center">
-            <span className="bg-blue-100 p-1 rounded mr-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-blue-700"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </span>
-            Grievance Details
-          </h2>
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-            {grievance.description &&
-              grievance.description.split("\n\n").map((section, index) => {
-                if (!section) return null;
-
-                const sectionParts = section.split(":\n");
-                const sectionTitle = sectionParts[0];
-                const sectionContent = sectionParts[1];
-
-                if (!sectionContent) {
-                  // If there's no clear title-content split, just render the text
-                  return (
-                    <p key={index} className="mb-4 whitespace-pre-wrap">
-                      {section}
-                    </p>
-                  );
-                }
-
-                return (
-                  <div
-                    key={index}
-                    className="mb-6 last:mb-0 bg-white p-3 rounded-md border border-gray-100"
-                  >
-                    <h3 className="font-medium text-gray-800 mb-2 pb-2 border-b border-gray-100">
-                      {sectionTitle}
-                    </h3>
-                    <div className="pl-4 border-l-2 border-blue-200 whitespace-pre-wrap text-gray-700">
-                      {sectionContent}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-
-        {/* Last updated information */}
-        <div className="mt-8 p-3 bg-gray-50 rounded-md border border-gray-100 flex items-center">
-          <div className="bg-gray-200 p-1.5 rounded-full mr-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-gray-600"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <div className="text-sm text-gray-600">
-            Last updated:{" "}
-            <span className="font-medium">
-              {grievance.updated_at
-                ? format(
-                    new Date(grievance.updated_at),
-                    "d MMMM yyyy 'at' h:mm a"
-                  )
-                : "N/A"}
-            </span>
+          {/* PDF Footer - only shows when printing */}
+          <div className="hidden print-only print-footer">
+            <p className="text-xs text-gray-500 mb-1">
+              This is an automatically generated document from the Grievance
+              Portal
+            </p>
+            <p className="text-xs text-gray-400">
+              Document ID: {grievance.id || "N/A"}
+            </p>
+            <p className="text-xs text-gray-400">
+              Portal: Grievance Management System
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -40,9 +40,9 @@ export default function ViewGrievancePage() {
         }
 
         const data = await response.json();
-        console.log(data);
+        console.log(data.grievance.grievance);
 
-        setGrievance(data.grievance);
+        setGrievance(data.grievance.grievance);
         setError(null);
       } catch (error) {
         console.error("Failed to fetch grievance details:", error);
@@ -61,7 +61,7 @@ export default function ViewGrievancePage() {
       {/* Back button */}
       <div className="mb-6">
         <Link href="/track-grievance">
-          <Button variant="ghost" className="pl-0 flex items-center gap-2">
+          <Button variant="ghost" className="pl-0 flex items-center gap-2 hover:bg-gray-100">
             <ArrowLeft className="h-4 w-4" />
             Back to Grievances
           </Button>

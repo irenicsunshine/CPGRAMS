@@ -99,7 +99,7 @@ export default function TrackGrievancePage() {
           {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2 px-3 py-2 h-10">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 px-3 py-2 h-10 hover:bg-gray-100">
                 <span className="font-medium">Status: {statusFilter === "all" ? "All" : statusFilter}</span>
                 <Filter className="h-4 w-4 ml-1" />
               </Button>
@@ -139,7 +139,7 @@ export default function TrackGrievancePage() {
           {/* Priority Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2 px-3 py-2 h-10">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 px-3 py-2 h-10 hover:bg-gray-100">
                 <span className="font-medium">Priority: {priorityFilter === "all" ? "All" : priorityFilter}</span>
                 <Filter className="h-4 w-4 ml-1" />
               </Button>
