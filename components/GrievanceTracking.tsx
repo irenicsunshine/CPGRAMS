@@ -8,7 +8,6 @@ import {
   Search,
   MessageSquare,
   FileText,
-  AlertTriangle,
   CheckSquare,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
@@ -45,47 +44,25 @@ const getEstimatedResolutionDate = (grievance: Grievance) => {
   }
 };
 
-// Helper to determine the current step based on status
-const getCurrentStep = (status: string | undefined): number => {
-  switch (status?.toLowerCase()) {
-    case "resolved":
-      return 7;
-    case "in_progress":
-    case "in progress":
-      return 6;
-    case "assigned":
-      return 3;
-    case "pending":
-    case "new":
-    default:
-      return 1;
-  }
-};
-
 export function GrievanceTracking({ grievance }: GrievanceTrackingProps) {
   const estimatedResolutionDate = getEstimatedResolutionDate(grievance);
-  const currentStep = getCurrentStep(grievance.status);
-
-  // Debug logs
-  console.log("Current step:", currentStep);
-  console.log("Grievance status:", grievance.status);
 
   // Define tracking steps with the specified stages
   const steps: TrackingStep[] = [
     {
       id: 1,
-      name: "Grievance Registered",
+      name: "Grievance Filed",
       description:
-        "Your grievance has been successfully registered in our system.",
+        "Your grievance has been successfully filed on CPGRAMS. You will receive updates as it progresses.",
       date: format(new Date(grievance.created_at || new Date()), "d MMM yyyy"),
       status: "complete",
       icon: CheckCircle2,
     },
     {
       id: 2,
-      name: "Under Processing - Routing to Department",
+      name: "Grievance Routed",
       description:
-        "Your grievance is being processed and routed to the appropriate department.",
+        "Your grievance has been routed to the Sub-Postmaster for initial review. The administrative body responsible is the Senior Superintendent of Post Offices (SSPO).",
       date: format(
         addDays(new Date(grievance.created_at || new Date()), 1),
         "d MMM yyyy"
@@ -95,111 +72,56 @@ export function GrievanceTracking({ grievance }: GrievanceTrackingProps) {
     },
     {
       id: 3,
-      name: "Assigned to Officer",
+      name: "Grievance Under Examination",
       description:
-        "Your grievance has been assigned to a concerned officer for further action.",
+        "The Sub-Postmaster is examining your grievance and verifying details with relevant records. They may contact you if clarification is needed.",
       date: format(
         addDays(new Date(grievance.created_at || new Date()), 3),
         "d MMM yyyy"
       ),
-      status: currentStep >= 3 ? "complete" : "current", // Current by default if not completed
-      icon: User,
-    },
-    {
-      id: 4,
-      name: "Under Examination",
-      description:
-        "Your grievance is being thoroughly examined by the assigned officer.",
-      date:
-        currentStep >= 4
-          ? format(
-              addDays(new Date(grievance.created_at || new Date()), 5),
-              "d MMM yyyy"
-            )
-          : "Pending",
-      status:
-        currentStep >= 4
-          ? "complete"
-          : currentStep == 3
-          ? "current"
-          : "upcoming",
+      status: "complete",
       icon: Search,
     },
     {
-      id: 5,
-      name: "Action Initiated",
+      id: 4,
+      name: "Upload Documents",
       description:
-        "Appropriate action has been initiated based on your grievance details.",
-      date:
-        currentStep >= 5
-          ? format(
-              addDays(new Date(grievance.created_at || new Date()), 7),
-              "d MMM yyyy"
-            )
-          : "Pending",
-      status:
-        currentStep >= 5
-          ? "complete"
-          : currentStep == 4
-          ? "current"
-          : "upcoming",
-      icon: AlertTriangle,
+        "The Sub-Postmaster has requested your Aadhaar card. Please upload it here.",
+      date: format(
+        addDays(new Date(grievance.created_at || new Date()), 5),
+        "d MMM yyyy"
+      ),
+      status: "current",
+      icon: FileText,
+    },
+    {
+      id: 5,
+      name: "Documents Returned to Sub-Postmaster",
+      description:
+        "The Postmaster is reviewing your documents. You will hear from them shortly.",
+      date: "Pending",
+      status: "upcoming",
+      icon: User,
     },
     {
       id: 6,
-      name: "Response Under Preparation",
-      description: "A formal response to your grievance is being prepared.",
-      date:
-        currentStep >= 6
-          ? format(
-              addDays(new Date(grievance.created_at || new Date()), 10),
-              "d MMM yyyy"
-            )
-          : "Pending",
-      status:
-        currentStep >= 6
-          ? "complete"
-          : currentStep == 5
-          ? "current"
-          : "upcoming",
-      icon: MessageSquare,
-    },
-    {
-      id: 7,
-      name: "Resolved/Closed",
+      name: "Grievance Resolved / Closed",
       description:
-        "Your grievance has been resolved and the case is now closed.",
-      date:
-        currentStep >= 7
-          ? format(
-              new Date(grievance.updated_at || estimatedResolutionDate),
-              "d MMM yyyy"
-            )
-          : "Expected by " + format(estimatedResolutionDate, "d MMM yyyy"),
-      status:
-        currentStep >= 7
-          ? "complete"
-          : currentStep == 6
-          ? "current"
-          : "upcoming",
+        "Your grievance has been marked as resolved. Click here to find the action taken.",
+      date: "Pending",
+      status: "upcoming",
       icon: CheckSquare,
     },
     {
-      id: 8,
-      name: "Awaiting Feedback",
+      id: 7,
+      name: "Closing the grievance",
       description:
-        "Please provide your feedback on the resolution of your grievance.",
-      date: "Pending",
-      status: "pending",
+        "If you are satisfied with this redressal, please close your grievance. If not, please mark that you are unsatisfied and the grievance will be forwarded to the SSPO for further redressal.",
+      date: "Expected by " + format(estimatedResolutionDate, "d MMM yyyy"),
+      status: "upcoming",
       icon: MessageSquare,
     },
   ];
-
-  // Debug log for steps
-  console.log(
-    "Steps with statuses:",
-    steps.map((step) => ({ id: step.id, name: step.name, status: step.status }))
-  );
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
