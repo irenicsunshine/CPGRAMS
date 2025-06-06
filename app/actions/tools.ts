@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { performMySchemeSearch as mySchemeSearchAction } from "./myscheme-search";
+import { processVideoQuery } from "./process-video";
 
 const API_BASE_URL = process.env.GRM_API_URL;
 const API_TOKEN = process.env.GRM_API_TOKEN;
@@ -118,6 +119,30 @@ const performMySchemeSearch = tool({
   },
 });
 
+const generateVideoSummary = tool({
+  description:
+    "Given a YouTube video link, analyze both audio and visual content to understand and summarize citizen concerns.",
+  parameters: z.object({
+    query: z.string().describe("The user's original query"),
+    url: z.string().describe("The YouTube video link at www.youtube.com or youtu.be"),
+  }),
+  execute: async function ({ query, url }) {
+    try {
+      const summary = await processVideoQuery(query, url);
+      return summary;
+    } catch (error) {
+      console.error("Error processing video query:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unknown error occurred during video query processing.",
+      };
+    }
+  },
+});
+
 const confirmGrievance = tool({
   description:
     "Ask for user confirmation before filing the grievance. This should be used as the final step before calling createGrievance.",
@@ -144,6 +169,7 @@ export const tools = {
   classifyGrievance,
   createGrievance,
   performMySchemeSearch,
+  generateVideoSummary,
   confirmGrievance,
   documentUpload,
   additionalSupport,

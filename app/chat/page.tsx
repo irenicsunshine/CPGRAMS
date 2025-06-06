@@ -302,7 +302,7 @@ export default function Page() {
                     )}
                     <div
                       className={`rounded-lg border px-6 text-default ${message.role === "user"
-                        ? `bg-user text-right ${message.content.length < 50 &&
+                        ? `bg-user ${message.content.length < 50 &&
                           !message.content.includes("\n")
                           ? "w-fit py-4"
                           : "max-w-full py-6"
@@ -520,6 +520,13 @@ export default function Page() {
                                     <div className="flex items-center">
                                       <Tag className="animate-pulse h-5 w-5 text-blue-600 mr-2" />
                                       <span>Classifying grievance...</span>
+                                    </div>
+                                  </div>
+                                ) : toolName === "generateVideoSummary" ? (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 my-2">
+                                    <div className="flex items-center">
+                                    <Loader2 className="animate-spin h-5 w-5 text-gray-600 mr-2" />
+                                      <span>Inperpreting video...</span>
                                     </div>
                                   </div>
                                 ) : (

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/google-vertex": "^2.2.24",
     "@elevenlabs/elevenlabs-js": "^2.1.0",
     "@elevenlabs/react": "^0.1.6",
     "@openrouter/ai-sdk-provider": "^0.4.6",
